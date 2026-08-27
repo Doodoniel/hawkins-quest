@@ -217,36 +217,135 @@ body{
 
 /* ---------- ЛОКАЦИЯ ---------- */
 .loc-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.loc-body{position:relative;z-index:70;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;height:100%;width:100%}
-.card{
-    background:rgba(9,2,4,.9);border:1px solid rgba(255,60,50,.5);border-radius:5px;
-    padding:calc(var(--u)*1.4) calc(var(--u)*2);max-width:64%;text-align:center;
-    box-shadow:0 0 calc(var(--u)*2) rgba(0,0,0,.9);backdrop-filter:blur(3px);
-}
-.card h3{font-family:'Alfa Slab One',Georgia,serif;font-size:calc(var(--u)*1.7);color:#ff3a2a;
-    letter-spacing:calc(var(--u)*.14);margin-bottom:calc(var(--u)*.7)}
-.card p{font-size:calc(var(--u)*1);line-height:1.6;color:#f0e2df}
-.card ul{text-align:left;margin-top:calc(var(--u)*.8);display:inline-block}
-.card li{list-style:none;font-size:calc(var(--u)*.98);line-height:1.7;color:#f7e9e6;
-    padding-left:calc(var(--u)*1.1);position:relative}
-.card li::before{content:'✦';position:absolute;left:0;color:#ffb03a}
 
-.reward{max-height:46vh;border:2px solid rgba(255,80,60,.5);border-radius:4px;
-    box-shadow:0 0 calc(var(--u)*2) rgba(0,0,0,.9);margin-bottom:calc(var(--u)*1.2)}
+/* Подсвеченные предметы прямо на фотографии локации */
+#loc-spots{position:absolute;inset:0;z-index:68;pointer-events:none}
+.ph{position:absolute;pointer-events:auto;cursor:pointer;--c:#ffb03a}
+.ph .ph-aura{position:absolute;inset:-6%;pointer-events:none;mix-blend-mode:screen;border-radius:42%;
+    background:radial-gradient(ellipse at 50% 50%,var(--c) 0%,transparent 62%);
+    opacity:.16;transition:opacity .25s ease;animation:ph-breathe 2.6s infinite alternate ease-in-out}
+@keyframes ph-breathe{0%{opacity:.10}100%{opacity:.26}}
+.ph .ph-frame{position:absolute;inset:-6%;pointer-events:none;opacity:.32;transform:scale(.94);
+    transition:opacity .18s,transform .2s cubic-bezier(.2,1.4,.4,1)}
+.ph .ph-frame i{position:absolute;width:calc(var(--u)*.85);height:calc(var(--u)*.85);
+    border:calc(var(--u)*.12) solid var(--c);box-shadow:0 0 calc(var(--u)*.5) var(--c)}
+.ph .ph-frame i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0}
+.ph .ph-frame i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0}
+.ph .ph-frame i:nth-child(3){right:0;bottom:0;border-left:0;border-top:0}
+.ph .ph-frame i:nth-child(4){left:0;bottom:0;border-right:0;border-top:0}
+.ph:hover .ph-aura{opacity:.7;animation:none}
+.ph:hover .ph-frame{opacity:1;transform:scale(1)}
+.ph.picked .ph-aura{opacity:.85;animation:none}
+.ph.picked .ph-frame{opacity:1;transform:scale(1.05)}
+
+/* Открытый замок: гаснет, кренится и больше не кликается */
+.ph.done{--c:#4ade80;cursor:default;pointer-events:none;
+    transform:rotate(9deg) translateY(1.5%);filter:grayscale(.55) brightness(.62);
+    transition:transform .5s cubic-bezier(.2,1.5,.4,1),filter .5s ease}
+.ph.done .ph-aura{opacity:.18;animation:none}
+.ph.done .ph-frame{opacity:0}
+.ph.bad{animation:ph-shake .4s}
+@keyframes ph-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-1.2%)}
+    50%{transform:translateX(1.2%)}80%{transform:translateX(-.6%)}}
+
+/* Искры при открытии замка */
+.spark{position:absolute;z-index:69;pointer-events:none;width:.45%;height:.8%;border-radius:50%;
+    background:radial-gradient(circle,#fff 0%,var(--c,#ffd27a) 45%,transparent 70%);
+    animation:spark-fly .7s ease-out forwards}
+@keyframes spark-fly{
+    0%{opacity:1;transform:translate(0,0) scale(1)}
+    100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3)}}
+
+/* ---------- НИЖНЯЯ ПОЛОСА ЗАДАНИЯ ---------- */
+.loc-body{position:absolute;left:0;right:0;bottom:0;z-index:72;display:flex;
+    flex-direction:column;align-items:center;pointer-events:none}
+.loc-body > *{pointer-events:auto}
+
+.taskbar{
+    width:100%;
+    background:linear-gradient(180deg,rgba(6,1,3,0) 0%,rgba(6,1,3,.82) 22%,rgba(4,0,2,.94) 100%);
+    padding:calc(var(--u)*1.6) calc(var(--u)*2) calc(var(--u)*1);
+    display:flex;align-items:center;gap:calc(var(--u)*1.4);
+}
+.tb-left{min-width:calc(var(--u)*17);max-width:calc(var(--u)*23)}
+.tb-title{font-family:'Alfa Slab One',Georgia,serif;font-size:calc(var(--u)*1.05);
+    color:#ff4a3a;letter-spacing:calc(var(--u)*.1);line-height:1.2;
+    text-shadow:0 0 calc(var(--u)*.6) rgba(255,0,0,.55)}
+.tb-text{font-size:calc(var(--u)*.8);line-height:1.5;color:#e6d4d0;margin-top:calc(var(--u)*.3)}
+.tb-text b{color:#ff8a72}
+.tb-mid{flex:1;display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.tb-right{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap;justify-content:flex-end}
+
+/* счётчик в углу картинки */
+.tb-badge{position:absolute;top:calc(var(--u)*1.2);left:calc(var(--u)*1.2);z-index:72;
+    background:rgba(8,1,3,.82);border:1px solid rgba(255,70,55,.45);border-radius:3px;
+    padding:calc(var(--u)*.35) calc(var(--u)*.85);font-size:calc(var(--u)*.72);
+    letter-spacing:calc(var(--u)*.1);color:#ffcfc7;text-transform:uppercase}
+.tb-badge b{color:#fff;font-size:calc(var(--u)*.95)}
+.tb-badge .miss{color:#ff5c4c}
+
+/* ---------- КЛЮЧИ ---------- */
+.keyrow{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;justify-content:center}
+.keycard{width:calc(var(--u)*5.6);height:calc(var(--u)*3.1);border-radius:3px;cursor:pointer;
+    background:rgba(24,16,8,.9);border:1px solid rgba(255,190,110,.35);
+    display:flex;align-items:center;justify-content:center;transition:all .16s}
+.keycard svg{width:90%;height:78%}
+.keycard:hover{border-color:#ffcf8a;box-shadow:0 0 calc(var(--u)*.8) rgba(255,180,90,.5);transform:translateY(-2px)}
+.keycard.picked{border-color:#ffd27a;background:rgba(70,45,12,.95);
+    box-shadow:0 0 calc(var(--u)*1.2) rgba(255,190,90,.8);transform:translateY(-3px)}
+.keycard.used{opacity:.18;pointer-events:none;filter:grayscale(1)}
+
+.keyhole-box{display:flex;align-items:center;gap:calc(var(--u)*.7);
+    background:rgba(20,12,6,.85);border:1px solid rgba(255,190,110,.3);
+    border-radius:3px;padding:calc(var(--u)*.4) calc(var(--u)*.8);min-height:calc(var(--u)*2.4)}
+.keyhole-box svg{width:calc(var(--u)*6);height:calc(var(--u)*2.9)}
+.keyhole-box span{font-size:calc(var(--u)*.7);color:#ffcf8a;letter-spacing:calc(var(--u)*.08);
+    text-transform:uppercase;white-space:nowrap}
+
+/* ---------- ЛАБОРАТОРИЯ: ШАГИ ---------- */
+.steps{display:flex;gap:calc(var(--u)*.4);align-items:center}
+.steps i{width:calc(var(--u)*.7);height:calc(var(--u)*.7);border-radius:50%;
+    border:1px solid rgba(255,255,255,.28);transition:all .3s}
+.steps i.on{background:#4ade80;border-color:#4ade80;box-shadow:0 0 calc(var(--u)*.6) #4ade80}
+.watch{font-size:calc(var(--u)*.78);letter-spacing:calc(var(--u)*.12);text-transform:uppercase;
+    color:#9ee8a8;min-width:calc(var(--u)*10);text-align:center;font-weight:700}
+.watch.danger{color:#ff5c4c;animation:watch-blink .35s infinite alternate}
+@keyframes watch-blink{0%{opacity:.5}100%{opacity:1}}
+
+/* луч камеры */
+.cam-beam{position:absolute;z-index:67;pointer-events:none;opacity:0;
+    mix-blend-mode:screen;transition:opacity .25s ease;
+    background:linear-gradient(180deg,rgba(255,70,45,.55),rgba(255,70,45,0) 80%);
+    clip-path:polygon(46% 0%,54% 0%,100% 100%,0% 100%)}
+.cam-beam.on{opacity:.8}
 
 /* ---------- ЗАГАДКА ---------- */
-.riddle-opts{display:flex;gap:calc(var(--u)*.8);flex-wrap:wrap;justify-content:center;margin-top:calc(var(--u)*1.4)}
+.riddle-opts{display:flex;gap:calc(var(--u)*.5);flex-wrap:wrap;justify-content:center}
 .opt{
     background:rgba(20,4,7,.92);border:1px solid rgba(255,80,60,.5);color:#ffe3de;
-    padding:calc(var(--u)*.7) calc(var(--u)*1.4);border-radius:3px;cursor:pointer;
-    font-size:calc(var(--u)*1);font-weight:700;letter-spacing:calc(var(--u)*.1);
-    text-transform:uppercase;transition:all .18s;
+    padding:calc(var(--u)*.5) calc(var(--u)*1.1);border-radius:3px;cursor:pointer;
+    font-size:calc(var(--u)*.85);font-weight:700;letter-spacing:calc(var(--u)*.08);
+    text-transform:uppercase;transition:all .18s;font-family:'Montserrat',sans-serif;
 }
 .opt:hover{border-color:#ff4a3a;box-shadow:0 0 calc(var(--u)*1) rgba(255,0,0,.5);transform:translateY(-2px)}
 .opt.wrong{background:#3a0a0a;border-color:#ff2a2a;animation:shake .4s}
 .opt.right{background:#0d3a18;border-color:#2beb54;box-shadow:0 0 calc(var(--u)*1.4) rgba(43,235,84,.7)}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shake{animation:loc-shake .5s ease-in-out}
+@keyframes loc-shake{0%,100%{transform:translate(0,0)}
+    20%{transform:translate(-10px,7px)}40%{transform:translate(10px,-7px)}
+    60%{transform:translate(-7px,-4px)}80%{transform:translate(7px,4px)}}
+
+/* ---------- НАГРАДА ---------- */
+.reward{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:71;
+    max-height:60%;max-width:54%;border:1px solid rgba(255,120,80,.45);border-radius:4px;
+    box-shadow:0 0 calc(var(--u)*3) rgba(0,0,0,.95);animation:reward-in .6s ease}
+@keyframes reward-in{from{opacity:0;transform:translate(-50%,-46%) scale(.94)}
+    to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.facts{display:flex;gap:calc(var(--u)*.7);flex-wrap:wrap;justify-content:center}
+.fact{background:rgba(22,6,4,.9);border:1px solid rgba(255,140,60,.4);border-radius:3px;
+    padding:calc(var(--u)*.4) calc(var(--u)*.9);font-size:calc(var(--u)*.78);color:#ffe0cf}
+.fact b{color:#ffb03a}
 
 /* ---------- ПЛЕЕР ПЕРЕВЁРНУТОЙ ЗАПИСИ ---------- */
 .tape{display:flex;align-items:center;gap:calc(var(--u)*.8);justify-content:center;
@@ -344,6 +443,7 @@ body{
         <img  id="loc-image" class="loc-media" alt="">
         <video id="loc-video" class="loc-media" playsinline muted loop></video>
         <div class="dim" id="loc-dim"></div>
+        <div id="loc-spots"></div>
         <div class="loc-body" id="loc-body"></div>
     </div>
 
@@ -439,7 +539,11 @@ function show(id){
 function go(id, after){
     wipe.classList.add('on');
     setTimeout(()=>{
-        if (id !== 'loc'){ locVideo.pause(); locVideo.removeAttribute('src'); locVideo.load(); }
+        if (id !== 'loc'){
+            locVideo.pause(); locVideo.removeAttribute('src'); locVideo.load();
+            LAB.running = false; clearTimeout(LAB.timer);
+            clearSpots(); hideBadge(); showReward(null);
+        }
         show(id);
         if (after) after();
         wipe.classList.remove('on');
@@ -790,12 +894,15 @@ function setLocMedia(opts){
             locImage.src = opts.image;
         };
         locVideo.src = opts.video;
+        locVideo.onloadedmetadata = remapSpots;
         locVideo.play().catch(()=>{});
     } else {
         locVideo.pause(); locVideo.removeAttribute('src'); locVideo.load();
         locVideo.style.display = 'none';
         locImage.style.display = '';
+        locImage.onload = remapSpots;
         locImage.src = opts.image;
+        if (locImage.complete) remapSpots();
     }
     locDim.style.background = opts.dim || 'rgba(4,0,3,.62)';
 }
@@ -817,128 +924,473 @@ function openLoc(id){
 /* ---- общий макет: заголовок, текст, кнопки ---- */
 function renderLoc(html){ locBody.innerHTML = html; }
 
+const locSpots = document.getElementById('loc-spots');
+
+/* Подсвеченный предмет прямо на фотографии локации.
+   box — [x, y, ширина, высота] в процентах ИСХОДНОГО кадра.
+   Медиа показывается с object-fit: cover, то есть кадр обрезается по краям,
+   поэтому проценты пересчитываются под реальное соотношение сторон. */
+function spotMap(box){
+    const media = locVideo.style.display === 'none' ? locImage : locVideo;
+    const iw = media.naturalWidth || media.videoWidth || 0;
+    const ih = media.naturalHeight || media.videoHeight || 0;
+    const stageEl = document.getElementById('screen-loc');
+    const cw = stageEl.clientWidth, ch = stageEl.clientHeight;
+    let [x, y, w, h] = box;
+    if (!iw || !ih || !cw || !ch) return [x, y, w, h];
+    const ai = iw / ih, ac = cw / ch;
+    if (ai < ac){                     // кадр выше рамки — обрезается сверху и снизу
+        const k = ac / ai;
+        y = (y / 100 * k - (k - 1) / 2) * 100;
+        h = h * k;
+    } else if (ai > ac){              // кадр шире рамки — обрезается по бокам
+        const k = ai / ac;
+        x = (x / 100 * k - (k - 1) / 2) * 100;
+        w = w * k;
+    }
+    return [x, y, w, h];
+}
+
+function placeSpot(el, box){
+    const [x, y, w, h] = spotMap(box);
+    el.style.left = x + '%'; el.style.top = y + '%';
+    el.style.width = w + '%'; el.style.height = h + '%';
+}
+
+/* Медиа грузится асинхронно — пересчитываем, когда станут известны размеры */
+function remapSpots(){
+    locSpots.querySelectorAll('[data-box]').forEach(el=>{
+        placeSpot(el, JSON.parse(el.dataset.box));
+    });
+}
+
+function addSpot(box, color, onClick){
+    const el = document.createElement('div');
+    el.className = 'ph';
+    el.dataset.box = JSON.stringify(box);
+    el.style.setProperty('--c', color);
+    placeSpot(el, box);
+    el.innerHTML = '<span class="ph-aura"></span>' +
+                   '<span class="ph-frame"><i></i><i></i><i></i><i></i></span>';
+    if (onClick) el.addEventListener('click', ()=> onClick(el));
+    locSpots.appendChild(el);
+    return el;
+}
+
+function clearSpots(){ locSpots.innerHTML = ''; }
+
+function sparks(box, color, n){
+    const [x, y, w, h] = spotMap(box);
+    for (let i = 0; i < (n || 14); i++){
+        const s = document.createElement('span');
+        const a = Math.random() * Math.PI * 2;
+        const r = 3 + Math.random() * 7;
+        s.className = 'spark';
+        s.style.cssText = `left:${x + w / 2}%;top:${y + h / 2}%;--c:${color};` +
+            `--dx:${(Math.cos(a) * r).toFixed(1)}vw;--dy:${(Math.sin(a) * r).toFixed(1)}vh;` +
+            `animation-delay:${(Math.random() * .12).toFixed(2)}s`;
+        locSpots.appendChild(s);
+        setTimeout(()=> s.remove(), 900);
+    }
+}
+
+/* Короткая вспышка на весь кадр */
+function locFlash(color, ms){
+    const f = document.createElement('div');
+    f.style.cssText = 'position:absolute;inset:0;z-index:74;pointer-events:none;' +
+        'background:' + color + ';opacity:.85;transition:opacity ' + (ms || 320) + 'ms ease';
+    document.getElementById('screen-loc').appendChild(f);
+    requestAnimationFrame(()=>{ f.style.opacity = '0'; });
+    setTimeout(()=> f.remove(), (ms || 320) + 80);
+}
+
+/* ==========================================================
+   ПОЛИЦЕЙСКИЙ УЧАСТОК — подбор ключей к замкам
+   Замки обведены по фотографии, у каждого свой профиль бородки.
+   Подходит ровно один ключ; на экране подсказок нет.
+   ========================================================== */
+const LOCKS = [
+    { box: [20.2, 67.6, 6.2, 14.2], pat: [1, 3, 2] },
+    { box: [28.2, 66.8, 6.0, 13.8], pat: [3, 1, 2] },
+    { box: [36.3, 65.9, 6.0, 14.0], pat: [2, 3, 1] },
+    { box: [44.4, 65.0, 6.1, 14.2], pat: [1, 2, 4] },
+    { box: [52.2, 64.2, 6.1, 14.2], pat: [4, 2, 1] },
+    { box: [59.4, 63.5, 5.9, 14.3], pat: [2, 4, 3] },
+    { box: [66.8, 62.8, 6.0, 14.5], pat: [3, 2, 4] },
+    { box: [74.7, 62.1, 6.1, 14.4], pat: [4, 3, 1] },
+    { box: [82.3, 61.5, 6.4, 14.0], pat: [1, 4, 3] }
+];
+
+const Police = { picked: null, opened: 0, misses: 0, order: [] };
+
+/* Силуэт ключа: круглая головка, стержень и бородка по узору */
+function keySVG(pat, hole){
+    const H = [0, 6, 11, 16, 21];
+    let d = 'M7,9 A7,7 0 1,1 7,17 Z M13,10 L74,10 L74,14 ';
+    let x = 74;
+    for (let i = pat.length - 1; i >= 0; i--){
+        const t = H[pat[i]];
+        d += `L${x},${14 + t} L${x - 11},${14 + t} L${x - 11},14 `;
+        x -= 15;
+    }
+    d += 'L13,14 Z';
+    const fill = hole ? '#120b05' : '#ffd9a4';
+    return `<svg viewBox="0 0 80 38" xmlns="http://www.w3.org/2000/svg">` +
+           (hole ? `<rect x="1" y="1" width="78" height="36" rx="3" fill="#e8d2ab"/>` : '') +
+           `<path d="${d}" fill="${fill}"/></svg>`;
+}
+
+function policeBadge(){
+    const b = document.getElementById('loc-badge');
+    if (!b) return;
+    const left = LOCKS.length - Police.opened;
+    b.innerHTML = 'Замков осталось <b>' + left + '</b>' +
+        (Police.misses ? ' · <span class="miss">ошибок ' + Police.misses + '</span>' : '');
+}
+
+function policeBar(){
+    const lock = Police.picked !== null ? null : null;
+    const keys = Police.order.map(i=>{
+        const used = LOCKS[i].open ? ' used' : '';
+        const pick = (Police.pickedKey === i) ? ' picked' : '';
+        return `<div class="keycard${used}${pick}" data-key="${i}">${keySVG(LOCKS[i].pat, false)}</div>`;
+    }).join('');
+    const sel = Police.pickedLock;
+    const hole = sel === null || sel === undefined
+        ? '<span>Выберите замок на тубусе</span>'
+        : keySVG(LOCKS[sel].pat, true) + '<span>какой ключ подойдёт?</span>';
+    return `
+      <div class="taskbar">
+        <div class="tb-left">
+          <div class="tb-title">ОРУЖЕЙНАЯ</div>
+          <div class="tb-text">Тубус заперт. Нажмите замок, затем — <b>ключ с подходящей бородкой</b>.</div>
+        </div>
+        <div class="tb-mid"><div class="keyrow" id="keyrow">${keys}</div></div>
+        <div class="tb-right"><div class="keyhole-box" id="keyhole">${hole}</div></div>
+      </div>`;
+}
+
+function policeRefresh(){
+    renderLoc(policeBar());
+    policeBadge();
+    document.querySelectorAll('#keyrow .keycard').forEach(el=>{
+        el.addEventListener('click', ()=> pickKey(+el.dataset.key));
+    });
+}
+
+function pickKey(i){
+    if (LOCKS[i].open) return;
+    if (Police.pickedLock === null || Police.pickedLock === undefined){
+        Police.pickedKey = (Police.pickedKey === i) ? null : i;
+        policeRefresh();
+        return;
+    }
+    const lockIdx = Police.pickedLock;
+    if (i === lockIdx){
+        openLock(lockIdx);
+    } else {
+        Police.misses++;
+        const el = LOCKS[lockIdx].el;
+        el.classList.remove('bad'); void el.offsetWidth; el.classList.add('bad');
+        locFlash('rgba(255,40,20,.28)', 260);
+        playFx('miss');
+    }
+    Police.pickedLock = null;
+    Police.pickedKey = null;
+    LOCKS.forEach(l=> l.el && l.el.classList.remove('picked'));
+    policeRefresh();
+}
+
+function openLock(i){
+    const l = LOCKS[i];
+    if (l.open) return;
+    l.open = true;
+    Police.opened++;
+    l.el.classList.add('done');
+    sparks(l.box, '#ffd27a', 16);
+    locFlash('rgba(255,220,150,.22)', 240);
+    playFx('open');
+    if (Police.opened === LOCKS.length) setTimeout(()=> policeResult(true), 900);
+}
+
+function selectLock(i){
+    const l = LOCKS[i];
+    if (l.open) return;
+    LOCKS.forEach(x=> x.el && x.el.classList.remove('picked'));
+    if (Police.pickedLock === i){ Police.pickedLock = null; }
+    else { Police.pickedLock = i; l.el.classList.add('picked'); }
+    Police.pickedKey = null;
+    policeRefresh();
+}
+
+/* ==========================================================
+   ЛАБОРАТОРИЯ — не попасть в объектив
+   Камеры на потолке по очереди просыпаются и делают снимок.
+   Шагать можно только пока все тёмные.
+   ========================================================== */
+const CAMERAS = [
+    { box: [0.0, 11.5, 6.5, 9.0],  beam: [-2, 19, 26, 62] },
+    { box: [48.5, 18.5, 5.5, 7.0], beam: [40, 25, 22, 60] },
+    { box: [92.0, 16.5, 7.5, 9.5], beam: [76, 25, 26, 60] }
+];
+const LAB = { steps: 8, step: 0, misses: 0, phase: 'safe', timer: null, active: -1, running: false };
+
+function labBadge(){
+    const b = document.getElementById('loc-badge');
+    if (!b) return;
+    b.innerHTML = 'До архива <b>' + (LAB.steps - LAB.step) + '</b>' +
+        (LAB.misses ? ' · <span class="miss">замечены ' + LAB.misses + '/3</span>' : '');
+}
+
+function labBar(){
+    let dots = '';
+    for (let i = 0; i < LAB.steps; i++) dots += `<i class="${i < LAB.step ? 'on' : ''}"></i>`;
+    return `
+      <div class="taskbar">
+        <div class="tb-left">
+          <div class="tb-title">СЕКТОР 7</div>
+          <div class="tb-text">Идите к архиву. Шагайте, только <b>пока камеры спят</b>.</div>
+        </div>
+        <div class="tb-mid">
+          <div class="steps">${dots}</div>
+          <div class="watch" id="lab-watch">коридор чист</div>
+        </div>
+        <div class="tb-right">
+          <button class="btn small" id="lab-step" onclick="labStep()">Шаг</button>
+        </div>
+      </div>`;
+}
+
+function labSchedule(){
+    if (!LAB.running) return;
+    clearTimeout(LAB.timer);
+    const w = document.getElementById('lab-watch');
+    if (LAB.phase === 'safe'){
+        LAB.phase = 'charge';
+        LAB.active = Math.floor(Math.random() * CAMERAS.length);
+        const cam = CAMERAS[LAB.active];
+        cam.el.classList.add('picked');
+        cam.beamEl.classList.add('on');
+        if (w){ w.textContent = 'камера просыпается'; w.classList.add('danger'); }
+        LAB.timer = setTimeout(labSchedule, 700 + Math.random() * 500);
+    } else if (LAB.phase === 'charge'){
+        LAB.phase = 'flash';
+        locFlash('rgba(255,255,255,.75)', 260);
+        playFx('flash');
+        if (w) w.textContent = 'снимок!';
+        LAB.timer = setTimeout(labSchedule, 320);
+    } else {
+        LAB.phase = 'safe';
+        CAMERAS.forEach(c=>{ c.el.classList.remove('picked'); c.beamEl.classList.remove('on'); });
+        if (w){ w.textContent = 'коридор чист'; w.classList.remove('danger'); }
+        LAB.timer = setTimeout(labSchedule, 1500 + Math.random() * 1300);
+    }
+}
+
+function labStep(){
+    if (!LAB.running) return;
+    if (LAB.phase === 'safe'){
+        LAB.step++;
+        renderLoc(labBar()); labBadge();
+        if (LAB.step >= LAB.steps){
+            LAB.running = false;
+            clearTimeout(LAB.timer);
+            CAMERAS.forEach(c=>{ c.el.classList.remove('picked'); c.beamEl.classList.remove('on'); });
+            setTimeout(()=> labResult(true), 500);
+        }
+    } else {
+        LAB.misses++;
+        shakeLoc();
+        locFlash('rgba(255,40,20,.4)', 300);
+        playFx('miss');
+        renderLoc(labBar()); labBadge();
+        if (LAB.misses >= 3){
+            LAB.running = false;
+            clearTimeout(LAB.timer);
+            setTimeout(()=> labResult(false), 600);
+        }
+    }
+}
+
+function shakeLoc(){
+    const s = document.getElementById('screen-loc');
+    s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
+    setTimeout(()=> s.classList.remove('shake'), 520);
+}
+
+/* ==========================================================
+   СЦЕНЫ ЛОКАЦИЙ
+   ========================================================== */
+function locBadgeEl(){
+    let b = document.getElementById('loc-badge');
+    if (!b){
+        b = document.createElement('div');
+        b.id = 'loc-badge';
+        b.className = 'tb-badge';
+        document.getElementById('screen-loc').appendChild(b);
+    }
+    b.style.display = '';
+    return b;
+}
+function hideBadge(){
+    const b = document.getElementById('loc-badge');
+    if (b) b.style.display = 'none';
+}
+
 const LOC_SCENES = {
 
-    /* ---------- ПОЛИЦЕЙСКИЙ УЧАСТОК ---------- */
     police(){
-        setLocMedia({ video:'assets/police.mp4', image:'assets/police-locks.jpg', dim:'rgba(4,0,3,.55)' });
-        renderLoc(`
-            <div class="card">
-                <h3>ПОЛИЦЕЙСКИЙ УЧАСТОК ХОУКИНСА</h3>
-                <p>В оружейной — запертый тубус на шести замках. Где-то в участке
-                лежит связка ключей: <b>подберите ключи к замкам</b>.<br>
-                Тот, кто откроет тубус, получит оружие.</p>
-                <div class="btn-row">
-                    <button class="btn ok" onclick="policeResult(true)">Замки открыты</button>
-                    <button class="btn ghost" onclick="policeResult(false)">Не справились</button>
-                </div>
-            </div>`);
+        setLocMedia({ video:'assets/police.mp4', image:'assets/police-locks.jpg', dim:'rgba(4,0,3,.18)' });
+        clearSpots();
+        Police.picked = null; Police.pickedLock = null; Police.pickedKey = null;
+        Police.opened = 0; Police.misses = 0;
+        Police.order = LOCKS.map((_, i)=> i).sort(()=> Math.random() - .5);
+        LOCKS.forEach((l, i)=>{
+            l.open = false;
+            l.el = addSpot(l.box, '#ffcf8a', ()=> selectLock(i));
+        });
+        locBadgeEl();
+        policeRefresh();
     },
 
-    /* ---------- ЛАБОРАТОРИЯ ---------- */
     lab(){
-        setLocMedia({ video:'assets/lab.mp4', dim:'rgba(4,0,6,.6)' });
-        renderLoc(`
-            <div class="card">
-                <h3>НАЦИОНАЛЬНАЯ ЛАБОРАТОРИЯ ХОУКИНСА</h3>
-                <p>В коридорах — камеры наблюдения. <b>Пройдите к архиву, не попав в объектив.</b>
-                Кого сфотографируют — тот выбывает из вылазки.<br>
-                В архиве лежит секретное досье на объект.</p>
-                <div class="btn-row">
-                    <button class="btn ok" onclick="labResult(true)">Прошли незамеченными</button>
-                    <button class="btn ghost" onclick="labResult(false)">Нас засекли</button>
-                </div>
-            </div>`);
+        setLocMedia({ video:'assets/lab.mp4', image:'assets/lab.png', dim:'rgba(4,0,6,.2)' });
+        clearSpots();
+        LAB.step = 0; LAB.misses = 0; LAB.phase = 'safe'; LAB.running = true;
+        CAMERAS.forEach(c=>{
+            c.el = addSpot(c.box, '#ff5c4c', null);
+            c.el.style.cursor = 'default';
+            const b = document.createElement('div');
+            b.className = 'cam-beam';
+            b.dataset.box = JSON.stringify(c.beam);
+            placeSpot(b, c.beam);
+            locSpots.appendChild(b);
+            c.beamEl = b;
+        });
+        locBadgeEl();
+        renderLoc(labBar());
+        labBadge();
+        clearTimeout(LAB.timer);
+        LAB.timer = setTimeout(labSchedule, 1400);
     },
 
-    /* ---------- РАДИОСТАНЦИЯ ---------- */
     radio(){
-        setLocMedia({ video:'assets/radio.mp4', dim:'rgba(2,2,8,.6)' });
+        setLocMedia({ video:'assets/radio.mp4', image:'assets/radio.png', dim:'rgba(2,2,8,.24)' });
+        clearSpots();
+        hideBadge();
         renderLoc(`
-            <div class="card">
-                <h3>РАДИО ХОУКИНС</h3>
-                <p>В эфир пробилась запись из Изнанки — но звучит она задом наперёд.
-                <b>Переверните её и услышьте, где прячется Демогоргон.</b></p>
-                <div class="tape">
-                    <button class="btn small" onclick="playTape(true)">▶ Перевёрнутая</button>
-                    <button class="btn small ghost" onclick="playTape(false)">▶ Как есть</button>
-                    <button class="btn small ghost" onclick="stopTape()">■ Стоп</button>
-                    <div class="note" id="tape-note">Файл записи: ${CONFIG.tapeFile}</div>
-                </div>
-                <div class="btn-row" id="riddle-go">
-                    <button class="btn small" onclick="showRiddle()">Мы готовы ответить</button>
-                </div>
-                <div class="riddle-opts" id="riddle" style="display:none"></div>
-            </div>`);
+          <div class="taskbar">
+            <div class="tb-left">
+              <div class="tb-title">РАДИО ХОУКИНС</div>
+              <div class="tb-text">В эфире запись из Изнанки. <b>Переверните её</b> и услышьте, где он прячется.</div>
+            </div>
+            <div class="tb-mid">
+              <button class="btn small" onclick="playTape(true)">◀ Перевёрнутая</button>
+              <button class="btn small ghost" onclick="playTape(false)">▶ Как есть</button>
+              <button class="btn small ghost" onclick="stopTape()">■</button>
+              <span class="tb-text" id="tape-note" style="margin:0"></span>
+            </div>
+            <div class="tb-right">
+              <button class="btn small" id="riddle-go" onclick="showRiddle()">Мы готовы ответить</button>
+              <div class="riddle-opts" id="riddle" style="display:none"></div>
+            </div>
+          </div>`);
     },
 
-    /* ---------- ШКОЛА · ФИНАЛ ---------- */
     school(){
-        setLocMedia({ video:'assets/school.mp4', dim:'rgba(8,0,2,.55)' });
-        const known = State.journal.length
-            ? '<ul>' + State.journal.map(t=>'<li>'+t+'</li>').join('') + '</ul>'
-            : '<p style="color:#ff8a8a">Вы идёте в бой вслепую — ничего не собрано.</p>';
+        setLocMedia({ video:'assets/school.mp4', image:'assets/school-demogorgon.png', dim:'rgba(8,0,2,.3)' });
+        clearSpots();
+        hideBadge();
+        const facts = State.journal.length
+            ? State.journal.map(t=>'<span class="fact">' + t.replace(/^([^:]+):/, '<b>$1:</b>') + '</span>').join('')
+            : '<span class="fact" style="color:#ff8a8a">Ничего не собрано</span>';
         renderLoc(`
-            <div class="card">
-                <h3>СРЕДНЯЯ ШКОЛА ХОУКИНСА</h3>
-                <p>Он здесь. Дальше — только бой.</p>
-                ${known}
-                <div class="btn-row">
-                    <button class="btn" onclick="startBattle()">В бой</button>
-                    <button class="btn ghost" onclick="go('map')">Ещё не готовы</button>
-                </div>
-            </div>`);
+          <div class="taskbar">
+            <div class="tb-left">
+              <div class="tb-title">ШКОЛА ХОУКИНСА</div>
+              <div class="tb-text">Он здесь. Дальше — только бой.</div>
+            </div>
+            <div class="tb-mid"><div class="facts">${facts}</div></div>
+            <div class="tb-right">
+              <button class="btn small" onclick="startBattle()">В бой</button>
+              <button class="btn small ghost" onclick="go('map', refreshMap)">Не готовы</button>
+            </div>
+          </div>`);
     }
 };
 
 /* ---------- исходы локаций ---------- */
+function finishBar(title, text, btn, cls){
+    return `
+      <div class="taskbar">
+        <div class="tb-left">
+          <div class="tb-title">${title}</div>
+          <div class="tb-text">${text}</div>
+        </div>
+        <div class="tb-mid"></div>
+        <div class="tb-right">
+          <button class="btn small ${cls || ''}" onclick="go('map', refreshMap)">${btn}</button>
+        </div>
+      </div>`;
+}
+
+function showReward(src){
+    const old = document.getElementById('loc-reward');
+    if (old) old.remove();
+    if (!src) return;
+    const img = document.createElement('img');
+    img.id = 'loc-reward';
+    img.className = 'reward';
+    img.src = src;
+    document.getElementById('screen-loc').appendChild(img);
+}
+
 function policeResult(ok){
     State.done.police = true;
+    clearSpots(); hideBadge();
     if (ok){
         note('Оружие: бита с гвоздями');
-        renderLoc(`
-            <img class="reward" src="assets/police-bat.jpg" alt="Бита">
-            <div class="card">
-                <h3>ТУБУС ОТКРЫТ</h3>
-                <p>Внутри — <b>бита с гвоздями</b>. Теперь есть чем встретить тварь.</p>
-                <div class="btn-row"><button class="btn" onclick="go('map', refreshMap)">К карте</button></div>
-            </div>`);
+        locFlash('rgba(255,230,180,.5)', 500);
+        showReward('assets/police-bat.jpg');
+        renderLoc(finishBar('ТУБУС ОТКРЫТ',
+            'Внутри — <b>бита с гвоздями</b>. Теперь есть чем встретить тварь.', 'К карте', 'ok'));
     } else {
         note('Оружия нет — тубус остался заперт');
-        renderLoc(`
-            <img class="reward" src="assets/police-hopper.jpg" alt="Хоппер">
-            <div class="card">
-                <h3>ЗАМКИ НЕ ПОДДАЛИСЬ</h3>
-                <p>Шеф Хоппер выставил вас из участка. <b>В бой придётся идти без оружия.</b></p>
-                <div class="btn-row"><button class="btn ghost" onclick="go('map', refreshMap)">К карте</button></div>
-            </div>`);
+        showReward('assets/police-hopper.jpg');
+        renderLoc(finishBar('ЗАМКИ НЕ ПОДДАЛИСЬ',
+            'Хоппер выставил вас из участка. <b>В бой — без оружия.</b>', 'К карте', 'ghost'));
     }
     refreshMap();
 }
 
 function labResult(ok){
     State.done.lab = true;
+    LAB.running = false;
+    clearTimeout(LAB.timer);
+    clearSpots(); hideBadge();
     if (ok){
         note('Слабые места: звук, лапы, огонь в пасть');
+        locFlash('rgba(180,255,200,.3)', 450);
+        showReward('assets/dossier.jpg');
         renderLoc(`
-            <img class="reward" src="assets/dossier.jpg" alt="Досье">
-            <div class="card">
-                <h3>СЕКРЕТНОЕ ДОСЬЕ: ДЕМОГОРГОН</h3>
-                <ul>
-                    <li>Не имеет глаз — <b>идёт на звук</b></li>
-                    <li>Длинные лапы <b>уязвимы к переломам</b></li>
-                    <li>Раскрытая пасть <b>уязвима к огню</b></li>
-                </ul>
-                <div class="btn-row"><button class="btn" onclick="go('map', refreshMap)">К карте</button></div>
-            </div>`);
+          <div class="taskbar">
+            <div class="tb-left">
+              <div class="tb-title">АРХИВ · ДОСЬЕ</div>
+              <div class="tb-text">Вы дошли. Папка с грифом у вас.</div>
+            </div>
+            <div class="tb-mid"><div class="facts">
+              <span class="fact"><b>Нет глаз</b> — идёт на звук</span>
+              <span class="fact"><b>Лапы</b> — уязвимы к переломам</span>
+              <span class="fact"><b>Пасть</b> — уязвима к огню</span>
+            </div></div>
+            <div class="tb-right">
+              <button class="btn small ok" onclick="go('map', refreshMap)">К карте</button>
+            </div>
+          </div>`);
     } else {
         note('Досье не добыто — слабые места неизвестны');
-        renderLoc(`
-            <div class="card">
-                <h3>ВАС ЗАСЕКЛИ</h3>
-                <p>Камеры сработали, архив закрыли. <b>О слабых местах твари вы так и не узнали.</b></p>
-                <div class="btn-row"><button class="btn ghost" onclick="go('map', refreshMap)">К карте</button></div>
-            </div>`);
+        renderLoc(finishBar('ВАС ЗАСЕКЛИ',
+            'Камеры сработали, архив закрыли. <b>О слабых местах вы не узнали.</b>', 'К карте', 'ghost'));
     }
     refreshMap();
 }
@@ -954,7 +1406,8 @@ function showRiddle(){
 function buildRiddle(){
     const box = document.getElementById('riddle');
     if (!box || box.children.length) return;
-    CONFIG.riddleOptions.forEach(opt=>{
+    const opts = CONFIG.riddleOptions.slice().sort(()=> Math.random() - .5);
+    opts.forEach(opt=>{
         const b = document.createElement('button');
         b.className = 'opt';
         b.textContent = opt;
@@ -974,14 +1427,30 @@ function radioSuccess(){
     stopTape();
     State.done.radio = true;
     note('Он прячется в школе — в классе');
-    renderLoc(`
-        <div class="card">
-            <h3>СИГНАЛ РАСШИФРОВАН</h3>
-            <p>Сквозь помехи пробивается одно слово: <b>«КЛАСС»</b>.<br>
-            Демогоргон прячется в школе Хоукинса.</p>
-            <div class="btn-row"><button class="btn" onclick="go('map', refreshMap)">К карте</button></div>
-        </div>`);
+    locFlash('rgba(160,200,255,.35)', 450);
+    clearSpots(); hideBadge();
+    renderLoc(finishBar('СИГНАЛ РАСШИФРОВАН',
+        'Сквозь помехи пробивается одно слово. <b>Он в школе.</b>', 'К карте', 'ok'));
     refreshMap();
+}
+
+/* Короткие звуки-заглушки: играем то, что есть в наборе боя, если оно доступно */
+function playFx(kind){
+    try {
+        const a = playFx._c || (playFx._c = new (window.AudioContext || window.webkitAudioContext)());
+        const o = a.createOscillator(), g = a.createGain();
+        const now = a.currentTime;
+        const cfg = { open:[880, 0.10], miss:[160, 0.16], flash:[1400, 0.07] }[kind] || [440, .1];
+        o.type = kind === 'miss' ? 'sawtooth' : 'triangle';
+        o.frequency.setValueAtTime(cfg[0], now);
+        if (kind === 'open') o.frequency.exponentialRampToValueAtTime(1760, now + .12);
+        if (kind === 'miss') o.frequency.exponentialRampToValueAtTime(70, now + .18);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.18, now + .01);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + cfg[1]);
+        o.connect(g); g.connect(a.destination);
+        o.start(now); o.stop(now + cfg[1] + .05);
+    } catch(e){}
 }
 
 /* ---------- перевёрнутая запись ---------- */
@@ -1063,7 +1532,7 @@ document.addEventListener('keydown', e=>{
 /* =========================================================
    СТАРТ
    ========================================================= */
-window.addEventListener('resize', ()=>{ unit(); drawFog(); });
+window.addEventListener('resize', ()=>{ unit(); drawFog(); remapSpots(); });
 document.addEventListener('fullscreenchange', ()=> setTimeout(()=>{ unit(); drawFog(); }, 150));
 unit();
 buildMap();
