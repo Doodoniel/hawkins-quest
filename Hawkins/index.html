@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Очень странные дела | Хоукинс</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+    --blood:#ff2118;
+    --blood-deep:#8b0000;
+    --bone:#f4e9e6;
+    --paper:#e8d9b5;
+    --u:19.2px;
+}
+*{box-sizing:border-box;margin:0;padding:0;user-select:none}
+html,body{height:100%}
+body{
+    background:#000;color:#fff;font-family:'Montserrat',sans-serif;
+    overflow:hidden;display:flex;justify-content:center;align-items:center;cursor:default;
+}
+
+#stage{
+    position:relative;width:100vw;height:56.25vw;max-height:100vh;max-width:177.78vh;
+    background:#050105;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,.95);
+}
+
+/* ---------- общие слои атмосферы ---------- */
+#vhs{position:absolute;inset:0;pointer-events:none;opacity:.5}
+#vhs::before{content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+#vhs::after{content:'';position:absolute;left:0;right:0;height:22%;
+    background:linear-gradient(180deg,transparent,rgba(255,235,235,.05),transparent);
+    animation:roll 9s linear infinite}
+@keyframes roll{0%{top:-25%}100%{top:105%}}
+#grain{position:absolute;inset:-50%;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+    animation:grain .7s steps(4) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-2%)}100%{transform:translate(0,0)}}
+.vig{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 42%,rgba(6,0,3,.72) 88%,#050002 100%)}
+
+/* ---------- экраны ---------- */
+.screen{
+    position:absolute;inset:0;
+    display:none;flex-direction:column;justify-content:center;align-items:center;
+    background-size:cover;background-position:center;
+}
+.screen.active{display:flex;animation:fade .7s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.dim{position:absolute;inset:0;background:rgba(4,0,3,.72)}
+
+/* ---------- типографика ---------- */
+.title-neon{
+    position:relative;font-family:'Alfa Slab One','Georgia',serif;
+    font-size:calc(var(--u)*4.6);line-height:1.05;color:#ff1f14;text-align:center;
+    letter-spacing:calc(var(--u)*.2);
+    text-shadow:0 0 calc(var(--u)*.5) #ff1f14,0 0 calc(var(--u)*1.6) rgba(255,0,0,.9),
+                0 0 calc(var(--u)*3.5) rgba(255,0,0,.55),0 0 calc(var(--u)*6) rgba(120,0,0,.5);
+    animation:flicker 5s infinite;
+    -webkit-text-stroke:1px rgba(255,190,180,.3);
+}
+@keyframes flicker{0%,92%,100%{opacity:1}93%{opacity:.35}94%{opacity:1}95%{opacity:.5}96%{opacity:1}}
+.kicker{font-size:calc(var(--u)*.95);letter-spacing:calc(var(--u)*.6);
+    color:rgba(255,170,170,.7);text-transform:uppercase;margin-bottom:calc(var(--u)*1.1)}
+.subtitle{font-size:calc(var(--u)*1.05);letter-spacing:calc(var(--u)*.55);color:#ffd9d5;
+    font-weight:900;text-shadow:0 0 calc(var(--u)*1) rgba(255,0,0,.8);margin-top:calc(var(--u)*1)}
+.screen-head{
+    font-family:'Alfa Slab One',Georgia,serif;font-size:calc(var(--u)*2.6);color:#ff2a2a;
+    letter-spacing:calc(var(--u)*.22);text-align:center;
+    text-shadow:0 0 calc(var(--u)*.6) #ff0000,0 0 calc(var(--u)*2) rgba(255,0,0,.7),0 0 calc(var(--u)*3) #000;
+}
+.lead{
+    max-width:70%;font-size:calc(var(--u)*1.15);line-height:1.6;text-align:center;
+    color:#ffe6e2;text-shadow:0 0 calc(var(--u)*.8) #000;margin-top:calc(var(--u)*1.4);
+}
+.lead b{color:#ff6a5c}
+
+/* ---------- кнопки ---------- */
+.btn{
+    background:linear-gradient(180deg,#8b0000,#3d0000);border:2px solid #ff4444;color:#fff;
+    padding:calc(var(--u)*.85) calc(var(--u)*2.8);font-family:'Montserrat',sans-serif;
+    font-size:calc(var(--u)*1.1);font-weight:900;letter-spacing:calc(var(--u)*.22);
+    cursor:pointer;border-radius:3px;text-transform:uppercase;
+    box-shadow:0 0 calc(var(--u)*1.4) rgba(255,0,0,.45);transition:transform .18s,box-shadow .18s;
+}
+.btn:hover{transform:scale(1.05);box-shadow:0 0 calc(var(--u)*2.6) rgba(255,0,0,.85)}
+.btn.ghost{background:linear-gradient(180deg,#26262a,#131316);border-color:#6b6b72}
+.btn.ghost:hover{border-color:#aaa}
+.btn.ok{background:linear-gradient(180deg,#125a20,#07310f);border-color:#2beb54;
+    box-shadow:0 0 calc(var(--u)*1.2) rgba(43,235,84,.35)}
+.btn.ok:hover{box-shadow:0 0 calc(var(--u)*2.4) rgba(43,235,84,.7)}
+.btn-row{display:flex;gap:calc(var(--u)*1);margin-top:calc(var(--u)*2);flex-wrap:wrap;justify-content:center}
+.btn.small{font-size:calc(var(--u)*.85);padding:calc(var(--u)*.6) calc(var(--u)*1.6)}
+
+/* ---------- КАРТА ---------- */
+#screen-map{background:#0a0608}
+#map-wrap{
+    position:relative;height:100%;aspect-ratio:2398/1792;margin:auto;overflow:hidden;
+    background:url('assets/map.jpg') center/100% 100% no-repeat;
+}
+/* дымка — тот же анимированный кадр, что дрейфует над картой в презентации */
+#mist{position:absolute;left:6.7%;top:-41.2%;width:91.7%;height:182.5%;
+    z-index:55;pointer-events:none;mix-blend-mode:screen;opacity:.16}
+#fog{position:absolute;inset:0;width:100%;height:100%;z-index:60;pointer-events:none}
+#map-wrap::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(rgba(12,4,8,.28),rgba(12,4,8,.28)),
+               radial-gradient(ellipse at center,transparent 45%,rgba(20,0,6,.6) 100%)}
+
+.spot{position:absolute;cursor:pointer;z-index:70}
+.spot .spot-aura{
+    position:absolute;inset:-14%;pointer-events:none;mix-blend-mode:screen;border-radius:45%;
+    background:radial-gradient(ellipse at 50% 50%,var(--c) 0%,transparent 66%);
+    opacity:0;transition:opacity .35s ease;
+}
+.spot .spot-frame{position:absolute;inset:-4%;pointer-events:none;opacity:0;transform:scale(.92);
+    transition:opacity .2s,transform .2s cubic-bezier(.2,1.4,.4,1)}
+.spot .spot-frame i{position:absolute;width:calc(var(--u)*1.1);height:calc(var(--u)*1.1);
+    border:calc(var(--u)*.14) solid var(--c);box-shadow:0 0 calc(var(--u)*.6) var(--c)}
+.spot .spot-frame i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0}
+.spot .spot-frame i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0}
+.spot .spot-frame i:nth-child(3){right:0;bottom:0;border-left:0;border-top:0}
+.spot .spot-frame i:nth-child(4){left:0;bottom:0;border-right:0;border-top:0}
+
+.spot-label{
+    position:absolute;left:50%;bottom:100%;transform:translate(-50%,calc(var(--u)*.4));
+    background:rgba(8,0,2,.9);border:1px solid var(--c);color:var(--bone);
+    padding:calc(var(--u)*.22) calc(var(--u)*.7);margin-bottom:calc(var(--u)*.4);
+    font-size:calc(var(--u)*.85);font-weight:700;letter-spacing:calc(var(--u)*.08);
+    border-radius:3px;white-space:nowrap;opacity:0;pointer-events:none;text-transform:uppercase;
+    transition:opacity .18s,transform .18s;box-shadow:0 0 calc(var(--u)*.8) rgba(0,0,0,.9);
+}
+.spot-label small{display:block;font-size:calc(var(--u)*.6);color:#ff8a8a;margin-top:2px}
+
+.spot.open:hover .spot-aura{opacity:.75}
+.spot.open:hover .spot-frame{opacity:1;transform:scale(1)}
+.spot.open:hover .spot-label{opacity:1;transform:translate(-50%,0)}
+/* доступная, но ещё не пройденная — тихо дышит, чтобы её нашли */
+.spot.open .spot-aura{opacity:.4;animation:spot-breathe 2.4s infinite alternate ease-in-out}
+@keyframes spot-breathe{0%{opacity:.22}100%{opacity:.58}}
+.spot.done{--c:#5dd48a !important;cursor:default}
+.spot.done .spot-aura{animation:none;opacity:.14}
+.spot.done:hover .spot-aura{opacity:.3}
+.spot.locked{cursor:not-allowed}
+.spot.locked .spot-aura{opacity:0;animation:none}
+.spot.locked:hover .spot-aura{opacity:0}
+.spot.locked:hover .spot-frame,.spot.locked:hover .spot-label{opacity:0}
+
+/* ---------- ЖУРНАЛ ---------- */
+#journal{
+    position:absolute;left:calc(var(--u)*1.2);bottom:calc(var(--u)*1.2);z-index:70;
+    width:calc(var(--u)*20);background:rgba(10,3,4,.92);border:1px solid rgba(255,60,50,.45);
+    border-radius:4px;padding:calc(var(--u)*.8);backdrop-filter:blur(4px);
+    box-shadow:0 0 calc(var(--u)*1.4) rgba(0,0,0,.9);
+}
+#journal h4{font-size:calc(var(--u)*.72);letter-spacing:calc(var(--u)*.16);color:#ff6666;
+    text-transform:uppercase;border-bottom:1px solid rgba(255,60,50,.25);
+    padding-bottom:calc(var(--u)*.3);margin-bottom:calc(var(--u)*.5)}
+#journal li{list-style:none;font-size:calc(var(--u)*.78);line-height:1.5;color:#e9d9d5;
+    padding-left:calc(var(--u)*.9);position:relative;margin-bottom:calc(var(--u)*.25)}
+#journal li::before{content:'▸';position:absolute;left:0;color:#ff5c4c}
+#journal li.empty{color:#7a6a68;font-style:italic}
+#journal li.empty::before{content:'·';color:#5a4a48}
+
+/* ---------- СТЕНА С АЛФАВИТОМ ---------- */
+#wall-wrap{position:relative;height:100%;aspect-ratio:2496/1726;margin:auto;
+    background:url('assets/byers-dark.jpg') center/100% 100% no-repeat}
+/* затемнение отдельным слоем: filter на контейнере гасил бы и сами лампочки */
+#wall-wrap::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:rgba(3,1,4,.2);transition:background 1.2s ease}
+#wall-wrap.dark::before{background:rgba(3,1,4,.62)}
+/* лампочка = кусочек этой же фотографии в светлой экспозиции.
+   Ничего не дорисовываем: горит настоящая лампочка со стены. */
+.bulb{position:absolute;z-index:2;pointer-events:none;
+    background-image:url('assets/byers-bright.jpg');
+    background-repeat:no-repeat;
+    /* растушёвка краёв: кусочек фото не должен читаться прямоугольником */
+    -webkit-mask-image:radial-gradient(ellipse at 50% 50%, #000 30%, rgba(0,0,0,.55) 52%, transparent 72%);
+    mask-image:radial-gradient(ellipse at 50% 50%, #000 30%, rgba(0,0,0,.55) 52%, transparent 72%);
+    opacity:0;transition:opacity .16s ease, filter .16s ease}
+.letter-lit{position:absolute;z-index:2;pointer-events:none;
+    background-image:url('assets/byers-bright.jpg');
+    background-repeat:no-repeat;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 46%, #000 26%, rgba(0,0,0,.55) 54%, transparent 82%);
+    mask-image:radial-gradient(ellipse at 50% 46%, #000 26%, rgba(0,0,0,.55) 54%, transparent 82%);
+    opacity:0;transition:opacity .18s ease}
+.letter-lit.on{opacity:.95;
+    filter:brightness(1.45) saturate(1.15)
+           drop-shadow(0 0 calc(var(--u)*.3) color-mix(in srgb, var(--bc) 50%, transparent))}
+
+.bulb.on{
+    opacity:1;
+    filter:brightness(2.1) saturate(1.45)
+           drop-shadow(0 0 calc(var(--u)*.3) var(--bc))
+           drop-shadow(0 0 calc(var(--u)*1) var(--bc))
+           drop-shadow(0 0 calc(var(--u)*2.2) var(--bc));
+    animation:bulb-pop .35s ease}
+@keyframes bulb-pop{
+    0%   { transform:scale(.82); filter:brightness(1) saturate(1) }
+    55%  { transform:scale(1.06) }
+    100% { transform:scale(1) }
+}
+
+#msg-bar{
+    position:absolute;left:50%;bottom:calc(var(--u)*4.4);transform:translateX(-50%);z-index:70;
+    background:rgba(8,0,3,.92);border:1px solid rgba(255,60,50,.6);border-radius:4px;
+    padding:calc(var(--u)*.7) calc(var(--u)*1.6);min-width:calc(var(--u)*24);text-align:center;
+    box-shadow:0 0 calc(var(--u)*1.6) rgba(255,0,0,.35);
+}
+#msg-bar .cap{font-size:calc(var(--u)*.7);letter-spacing:calc(var(--u)*.2);color:#ff8a8a;text-transform:uppercase}
+#msg-text{font-family:'Alfa Slab One',Georgia,serif;font-size:calc(var(--u)*1.9);
+    letter-spacing:calc(var(--u)*.28);color:#ffe066;margin-top:calc(var(--u)*.3);min-height:1.2em;
+    text-shadow:0 0 calc(var(--u)*.7) #ff6a00,0 0 calc(var(--u)*2) rgba(255,80,0,.6)}
+
+/* ---------- ЛОКАЦИЯ ---------- */
+.loc-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.loc-body{position:relative;z-index:70;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;height:100%;width:100%}
+.card{
+    background:rgba(9,2,4,.9);border:1px solid rgba(255,60,50,.5);border-radius:5px;
+    padding:calc(var(--u)*1.4) calc(var(--u)*2);max-width:64%;text-align:center;
+    box-shadow:0 0 calc(var(--u)*2) rgba(0,0,0,.9);backdrop-filter:blur(3px);
+}
+.card h3{font-family:'Alfa Slab One',Georgia,serif;font-size:calc(var(--u)*1.7);color:#ff3a2a;
+    letter-spacing:calc(var(--u)*.14);margin-bottom:calc(var(--u)*.7)}
+.card p{font-size:calc(var(--u)*1);line-height:1.6;color:#f0e2df}
+.card ul{text-align:left;margin-top:calc(var(--u)*.8);display:inline-block}
+.card li{list-style:none;font-size:calc(var(--u)*.98);line-height:1.7;color:#f7e9e6;
+    padding-left:calc(var(--u)*1.1);position:relative}
+.card li::before{content:'✦';position:absolute;left:0;color:#ffb03a}
+
+.reward{max-height:46vh;border:2px solid rgba(255,80,60,.5);border-radius:4px;
+    box-shadow:0 0 calc(var(--u)*2) rgba(0,0,0,.9);margin-bottom:calc(var(--u)*1.2)}
+
+/* ---------- ЗАГАДКА ---------- */
+.riddle-opts{display:flex;gap:calc(var(--u)*.8);flex-wrap:wrap;justify-content:center;margin-top:calc(var(--u)*1.4)}
+.opt{
+    background:rgba(20,4,7,.92);border:1px solid rgba(255,80,60,.5);color:#ffe3de;
+    padding:calc(var(--u)*.7) calc(var(--u)*1.4);border-radius:3px;cursor:pointer;
+    font-size:calc(var(--u)*1);font-weight:700;letter-spacing:calc(var(--u)*.1);
+    text-transform:uppercase;transition:all .18s;
+}
+.opt:hover{border-color:#ff4a3a;box-shadow:0 0 calc(var(--u)*1) rgba(255,0,0,.5);transform:translateY(-2px)}
+.opt.wrong{background:#3a0a0a;border-color:#ff2a2a;animation:shake .4s}
+.opt.right{background:#0d3a18;border-color:#2beb54;box-shadow:0 0 calc(var(--u)*1.4) rgba(43,235,84,.7)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ---------- ПЛЕЕР ПЕРЕВЁРНУТОЙ ЗАПИСИ ---------- */
+.tape{display:flex;align-items:center;gap:calc(var(--u)*.8);justify-content:center;
+    margin-top:calc(var(--u)*1.2);flex-wrap:wrap}
+.tape .note{font-size:calc(var(--u)*.72);color:#c9a9a4;letter-spacing:.5px;width:100%;margin-top:calc(var(--u)*.5)}
+
+/* ---------- ВСПЫШКА ПЕРЕХОДА ---------- */
+#wipe{position:absolute;inset:0;z-index:80;pointer-events:none;background:#000;opacity:0;
+    transition:opacity .45s ease}
+#wipe.on{opacity:1}
+
+/* ---------- ПАНЕЛЬ ВЕДУЩЕГО ---------- */
+.corner-btn{position:absolute;top:10px;width:30px;height:30px;background:rgba(20,0,5,.4);
+    border:1px solid rgba(255,50,50,.2);color:rgba(255,255,255,.35);font-size:13px;font-weight:700;
+    display:flex;justify-content:center;align-items:center;cursor:pointer;border-radius:4px;
+    z-index:200;transition:all .2s}
+.corner-btn:hover{background:rgba(139,0,0,.85);color:#fff;border-color:#ff3333}
+#host-btn{right:10px}
+#fs-btn{right:48px}
+#host-panel{position:absolute;top:50px;right:15px;width:300px;background:rgba(12,2,4,.96);
+    border:2px solid #8b0000;border-radius:6px;padding:14px;z-index:200;display:none;
+    backdrop-filter:blur(8px);box-shadow:0 0 30px rgba(0,0,0,.9)}
+#host-panel h5{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#ff6666;
+    margin:10px 0 6px;border-bottom:1px solid rgba(255,50,50,.2);padding-bottom:4px}
+#host-panel h5:first-child{margin-top:0}
+.hb{background:#2a050a;border:1px solid #8b0000;color:#fff;padding:7px 10px;font-size:11px;
+    font-weight:700;letter-spacing:.5px;cursor:pointer;border-radius:3px;text-transform:uppercase;
+    width:100%;margin-bottom:6px;font-family:'Montserrat',sans-serif;transition:all .2s}
+.hb:hover{background:#500810;border-color:#ff3333}
+.hb.g{background:#0d3813;border-color:#1b8a33}
+.hb.g:hover{background:#165b20;border-color:#2beb54}
+.hb.d{background:#222;border-color:#444;color:#aaa}
+.hb.d:hover{background:#333;color:#fff}
+.host-hint{font-size:10px;color:rgba(255,180,180,.5);line-height:1.5;margin-top:8px;
+    border-top:1px solid rgba(255,50,50,.15);padding-top:8px}
+</style>
+</head>
+<body>
+<div id="stage">
+
+    <!-- ================= ТИТУЛ ================= -->
+    <div class="screen active" id="screen-title" style="background-image:url('assets/title.jpg')">
+        <div class="dim"></div>
+        <div style="position:relative;z-index:5;display:flex;flex-direction:column;align-items:center">
+            <div class="kicker">Хоукинс, штат Индиана · 1983</div>
+            <div class="title-neon">ОЧЕНЬ<br>СТРАННЫЕ ДЕЛА</div>
+            <div class="subtitle">ОПЕРАЦИЯ «ДЕМОГОРГОН»</div>
+            <div class="btn-row"><button class="btn" onclick="go('intro')">Начать</button></div>
+        </div>
+    </div>
+
+    <!-- ================= ИНТРО ================= -->
+    <div class="screen" id="screen-intro" style="background-image:url('assets/map.jpg')">
+        <div class="dim"></div>
+        <div style="position:relative;z-index:5;display:flex;flex-direction:column;align-items:center">
+            <div class="screen-head">МЫ В ХОУКИНСЕ</div>
+            <div class="lead">
+                Из Изнанки в город прорвался <b>Демогоргон</b>. Идти на него с пустыми руками —
+                верная смерть. Прежде чем принять бой, нужно <b>собрать информацию и снаряжение</b>.
+                <br><br>
+                На карте пока известен только <b>дом Байерсов</b>. Начнём оттуда.
+            </div>
+            <div class="btn-row"><button class="btn" onclick="go('map')">К карте</button></div>
+        </div>
+    </div>
+
+    <!-- ================= КАРТА ================= -->
+    <div class="screen" id="screen-map">
+        <div id="map-wrap"><img id="mist" src="assets/fire.gif" alt=""><canvas id="fog"></canvas></div>
+        <div id="journal">
+            <h4>Что мы узнали</h4>
+            <ul id="journal-list"></ul>
+        </div>
+    </div>
+
+    <!-- ================= ДОМ БАЙЕРСОВ ================= -->
+    <div class="screen" id="screen-byers">
+        <div id="wall-wrap"></div>
+        <div id="msg-bar">
+            <div class="cap" id="msg-cap">Послание из Изнанки</div>
+            <div id="msg-text"></div>
+        </div>
+        <div class="btn-row" style="position:absolute;bottom:calc(var(--u)*.6);left:50%;
+             transform:translateX(-50%);z-index:71;margin:0">
+            <button class="btn small" id="byers-play" onclick="playMessage()">Зажечь гирлянду</button>
+            <button class="btn small ghost" id="byers-again" onclick="playMessage()" style="display:none">Ещё раз</button>
+            <button class="btn small ghost" id="byers-reveal" onclick="revealMessage()" style="display:none">Показать ответ</button>
+            <button class="btn small ok" id="byers-done" onclick="finishByers()" style="display:none">Мы поняли</button>
+            <button class="btn small ghost" id="byers-back" onclick="go('map', refreshMap)" style="display:none">К карте</button>
+        </div>
+    </div>
+
+    <!-- ================= ЛОКАЦИЯ (общий экран) ================= -->
+    <div class="screen" id="screen-loc">
+        <img  id="loc-image" class="loc-media" alt="">
+        <video id="loc-video" class="loc-media" playsinline muted loop></video>
+        <div class="dim" id="loc-dim"></div>
+        <div class="loc-body" id="loc-body"></div>
+    </div>
+
+    <!-- ================= СЛУЖЕБНОЕ ================= -->
+    <div class="vig"></div>
+    <div id="vhs"></div>
+    <div id="grain"></div>
+    <div id="wipe"></div>
+
+    <div id="fs-btn" class="corner-btn" title="Полный экран (F)">⛶</div>
+    <div id="host-btn" class="corner-btn" title="Панель ведущего (M)">M</div>
+
+    <div id="host-panel">
+        <h5>Переходы</h5>
+        <button class="hb" onclick="go('title')">Титул</button>
+        <button class="hb" onclick="go('map')">Карта</button>
+        <h5>Локации</h5>
+        <button class="hb" onclick="openLoc('byers')">Дом Байерсов</button>
+        <button class="hb" onclick="openLoc('police')">Полицейский участок</button>
+        <button class="hb" onclick="openLoc('lab')">Лаборатория</button>
+        <button class="hb" onclick="openLoc('radio')">Радиостанция</button>
+        <button class="hb" onclick="openLoc('school')">Школа · финал</button>
+        <h5>Управление</h5>
+        <button class="hb g" onclick="unlockAll()">Открыть все локации</button>
+        <button class="hb d" onclick="resetQuest()">Сбросить квест</button>
+        <div class="host-hint">M — панель · F — полный экран · ESC — назад к карте</div>
+    </div>
+</div>
+
+<audio id="sfx-tape" preload="auto"></audio>
+
+<script>
+/* =========================================================
+   НАСТРОЙКИ КВЕСТА — правится здесь, ничего больше трогать не нужно
+   ========================================================= */
+const CONFIG = {
+    // Три послания из гирлянды: каждое открывает свою локацию.
+    // Порядок тот же, что в презентации.
+    messages: [
+        { word: 'ПОЛИЦИЯ',      opens: 'police' },
+        { word: 'ЛАБОРАТОРИЯ',  opens: 'lab'    },
+        { word: 'РАДИОСТАНЦИЯ', opens: 'radio'  }
+    ],
+    letterDelay: 620,      // мс между буквами
+    wordPause: 1100,       // пауза между словами
+
+    // Загадка радиостанции: где прячется Демогоргон
+    riddleOptions: ['ЗДАНИЕ', 'ЗАБОР', 'СТАДИОН', 'СТОЛОВАЯ', 'КЛАСС'],
+    riddleAnswer: 'КЛАСС',
+
+    // Файл записи из Изнанки (кладётся в assets/). Плеер играет её задом наперёд.
+    tapeFile: 'assets/upside-down.mp3',
+
+    // Куда ведёт финальная битва
+    battleUrl: '../Demogorgon/index.html'
+};
+
+/* ---------- состояние ---------- */
+const State = {
+    msgIndex: 0,   // какое послание из гирлянды идёт следующим
+    unlocked: { byers: true, police: false, lab: false, radio: false, school: false },
+    done:     { byers: false, police: false, lab: false, radio: false, school: false },
+    journal:  []
+};
+
+const LOCATIONS = {
+    byers:  { name: 'ДОМ БАЙЕРСОВ',        color:'#ffd27a', spot:[12,20,17,20] },
+    radio:  { name: 'РАДИОСТАНЦИЯ',        color:'#9fe8ff', spot:[35,13,13,34] },
+    lab:    { name: 'ЛАБОРАТОРИЯ ХОУКИНСА',color:'#7ea6ff', spot:[57,12,37,40] },
+    police: { name: 'ПОЛИЦЕЙСКИЙ УЧАСТОК', color:'#ff9a5c', spot:[49,54,17,25] },
+    school: { name: 'ШКОЛА ХОУКИНСА',      color:'#ff5c4c', spot:[69,53,27,34] }
+};
+
+const stage = document.getElementById('stage');
+const wipe = document.getElementById('wipe');
+const locImage = document.getElementById('loc-image');
+const locVideo = document.getElementById('loc-video');
+const locBody = document.getElementById('loc-body');
+const locDim = document.getElementById('loc-dim');
+
+function unit(){ stage.style.setProperty('--u', (stage.clientWidth/100)+'px');
+                 document.documentElement.style.setProperty('--u', (stage.clientWidth/100)+'px'); }
+
+/* ---------- переключение экранов ---------- */
+let current = 'title';
+function show(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+id).classList.add('active');
+    current = id;
+    // карта до показа скрыта, размеров у канваса нет — перерисовываем туман здесь
+    if (id === 'map') requestAnimationFrame(()=>{ unit(); drawFog(); startFogDrift(); });
+}
+function go(id, after){
+    wipe.classList.add('on');
+    setTimeout(()=>{
+        if (id !== 'loc'){ locVideo.pause(); locVideo.removeAttribute('src'); locVideo.load(); }
+        show(id);
+        if (after) after();
+        wipe.classList.remove('on');
+    }, 460);
+}
+
+/* =========================================================
+   КАРТА
+   ========================================================= */
+function buildMap(){
+    const wrap = document.getElementById('map-wrap');
+    wrap.querySelectorAll('.spot').forEach(s=>s.remove());
+    Object.entries(LOCATIONS).forEach(([id, loc])=>{
+        const [x,y,w,h] = loc.spot;
+        const el = document.createElement('div');
+        el.className = 'spot';
+        el.style.cssText = `left:${x}%;top:${y}%;width:${w}%;height:${h}%;--c:${loc.color}`;
+        el.innerHTML = '<span class="spot-aura"></span>' +
+                       '<span class="spot-frame"><i></i><i></i><i></i><i></i></span>' +
+                       '<span class="spot-label">'+loc.name+'<small></small></span>';
+        el.addEventListener('click', ()=>{
+            if (!State.unlocked[id]) return;
+            openLoc(id);
+        });
+        wrap.appendChild(el);
+        loc.el = el;
+    });
+    refreshMap();
+}
+
+function refreshMap(){
+    // школа открывается, когда пройдены все три локации
+    State.unlocked.school = State.done.police && State.done.lab && State.done.radio;
+
+    Object.entries(LOCATIONS).forEach(([id, loc])=>{
+        if (!loc.el) return;
+        const done = State.done[id], open = State.unlocked[id];
+        loc.el.classList.toggle('done', done);
+        loc.el.classList.toggle('open', open && !done);
+        loc.el.classList.toggle('locked', !open);
+        const small = loc.el.querySelector('.spot-label small');
+        let tag = done ? 'пройдено' : (open ? (id === 'school' ? 'финал' : 'доступно') : 'закрыто');
+        if (id === 'byers' && !done)
+            tag = 'послание ' + (State.msgIndex + 1) + ' из ' + CONFIG.messages.length;
+        small.textContent = tag;
+    });
+    kickFog();
+    refreshJournal();
+}
+
+function refreshJournal(){
+    const ul = document.getElementById('journal-list');
+    ul.innerHTML = '';
+    if (!State.journal.length){
+        ul.innerHTML = '<li class="empty">пока ничего</li>';
+        return;
+    }
+    State.journal.forEach(t=>{
+        const li = document.createElement('li');
+        li.textContent = t;
+        ul.appendChild(li);
+    });
+}
+function note(text){
+    if (!State.journal.includes(text)) State.journal.push(text);
+    refreshJournal();
+}
+
+
+/* =========================================================
+   ТУМАН ВОЙНЫ
+   Карта закрыта туманом из презентации; открытые локации
+   выжигают в нём мягкие «окна» с анимацией.
+   ========================================================= */
+const fogCanvas = document.getElementById('fog');
+const fogCtx = fogCanvas.getContext('2d');
+const fogTex = new Image();
+let fogPhase = 0;
+let fogTexReady = false;
+fogTex.onload = ()=>{ fogTexReady = true; drawFog(); };
+fogTex.onerror = ()=>{ fogTexReady = false; drawFog(); };
+fogTex.src = 'assets/fog.png';
+
+function fogResize(){
+    const w = fogCanvas.clientWidth, h = fogCanvas.clientHeight;
+    if (!w || !h) return false;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (fogCanvas.width !== W || fogCanvas.height !== H){
+        fogCanvas.width = W; fogCanvas.height = H;
+    }
+    return true;
+}
+
+function drawFog(){
+    if (!fogResize()) return;
+    const W = fogCanvas.width, H = fogCanvas.height;
+    const ctx = fogCtx;
+
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.clearRect(0, 0, W, H);
+
+    if (fogTexReady){
+        // два слоя текстуры ползут в разные стороны — туман живой, а не картинка
+        const cover = Math.max(W / fogTex.width, H / fogTex.height) * 1.25;
+        const tw = fogTex.width * cover, th = fogTex.height * cover;
+        const dx = Math.sin(fogPhase) * W * 0.05;
+        const dy = Math.cos(fogPhase * 0.7) * H * 0.04;
+        ctx.drawImage(fogTex, (W - tw) / 2 + dx, (H - th) / 2 + dy, tw, th);
+        ctx.save();
+        ctx.globalAlpha = .55;
+        ctx.translate(W, 0); ctx.scale(-1, 1);
+        ctx.drawImage(fogTex,
+            (W - tw * 1.35) / 2 - dx * 1.6, (H - th * 1.35) / 2 - dy * 1.4,
+            tw * 1.35, th * 1.35);
+        ctx.restore();
+        ctx.globalAlpha = 1;
+    } else {
+        ctx.fillStyle = '#2a2119';
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    // подтон под общую палитру
+    ctx.fillStyle = 'rgba(16,8,12,.42)';
+    ctx.fillRect(0, 0, W, H);
+
+    // прожигаем окна там, где локация уже открыта
+    ctx.globalCompositeOperation = 'destination-out';
+    Object.values(LOCATIONS).forEach(loc=>{
+        const k = loc.fogR || 0;
+        if (k <= 0) return;
+        const [x, y, w, h] = loc.spot;
+        const cx = (x + w / 2) / 100 * W;
+        const cy = (y + h / 2) / 100 * H;
+        const rx = (w / 100 * W) * 0.95 * k;
+        const ry = (h / 100 * H) * 1.05 * k;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(rx, ry);
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+        g.addColorStop(0,    'rgba(0,0,0,1)');
+        g.addColorStop(0.5,  'rgba(0,0,0,0.99)');
+        g.addColorStop(0.78, 'rgba(0,0,0,0.75)');
+        g.addColorStop(1,    'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(-1, -1, 2, 2);
+        ctx.restore();
+    });
+    ctx.globalCompositeOperation = 'source-over';
+}
+
+/* плавное открытие окон */
+let fogAnim = null;
+function updateFog(){
+    let moving = false;
+    Object.entries(LOCATIONS).forEach(([id, loc])=>{
+        const target = State.unlocked[id] ? 1 : 0;
+        if (loc.fogR === undefined) loc.fogR = target;   // при старте без анимации
+        if (Math.abs(loc.fogR - target) > 0.004){
+            loc.fogR += (target - loc.fogR) * 0.08;
+            moving = true;
+        } else if (loc.fogR !== target){
+            loc.fogR = target;
+        }
+    });
+    drawFog();
+    if (moving) fogAnim = requestAnimationFrame(updateFog);
+    else fogAnim = null;
+}
+function kickFog(){ if (!fogAnim) fogAnim = requestAnimationFrame(updateFog); }
+
+/* туман шевелится всё время, пока показана карта — 12 кадров в секунду хватает */
+let fogDrift = null;
+function startFogDrift(){
+    if (fogDrift) return;
+    fogDrift = setInterval(()=>{
+        if (current !== 'map'){ clearInterval(fogDrift); fogDrift = null; return; }
+        fogPhase += 0.012;
+        if (!fogAnim) drawFog();
+    }, 80);
+}
+
+/* =========================================================
+   ДОМ БАЙЕРСОВ — послание из лампочек
+   ========================================================= */
+/* Гирлянда, снятая с самой фотографии стены.
+   rx/ry/rw/rh — прямоугольник лампочки, lx/ly/lw/lh — прямоугольник вокруг буквы.
+   Свет — это те же куски фото в светлой экспозиции (byers-bright.jpg),
+   поверх ничего не дорисовывается, как и сделано в презентации. */
+const WALL = [
+    {c:'А',rx:15.064,ry:20.51,rw:5.929,rh:7.126,lx:16.186,ly:25.272,lw:3.085,lh:10.753,col:'#ff9f7b'},
+    {c:'Б',rx:20.633,ry:21.495,rw:3.846,rh:5.272,lx:21.154,ly:25.337,lw:2.965,lh:8.132,col:'#76ffb2'},
+    {c:'В',rx:25.481,ry:21.031,rw:3.365,rh:4.983,lx:25.841,ly:23.78,lw:3.165,lh:10.551,col:'#53c9ff'},
+    {c:'Г',rx:30.329,ry:20.278,rw:3.325,rh:4.983,lx:30.77,ly:25.305,lw:3.045,lh:8.603,col:'#5cd4ff'},
+    {c:'Д',rx:33.654,ry:19.525,rw:6.49,rh:8.111,lx:34.775,ly:24.269,lw:4.287,lh:11.022,col:'#ff9470'},
+    {c:'Е',rx:40.024,ry:20.742,rw:4.046,rh:5.33,lx:40.706,ly:24.892,lw:3.325,lh:7.864,col:'#7effc9'},
+    {c:'Ё',rx:43.069,ry:16.86,rw:14.062,rh:10.776,lx:45.954,ly:23.508,lw:3.726,lh:11.963,col:'#ff924e'},
+    {c:'Ж',rx:43.83,ry:16.976,rw:4.087,rh:4.751,lx:50.0,ly:23.458,lw:6.37,lh:12.702,col:'#ff9d6a'},
+    {c:'З',rx:57.812,ry:18.54,rw:4.127,rh:5.272,lx:58.013,ly:23.458,lw:3.886,lh:12.702,col:'#50ffbd'},
+    {c:'И',rx:63.141,ry:16.338,rw:3.205,rh:3.592,lx:63.741,ly:23.458,lw:4.087,lh:12.702,col:'#ff8d4e'},
+    {c:'Й',rx:65.345,ry:15.875,rw:4.247,rh:3.766,lx:69.831,ly:23.463,lw:4.407,lh:12.635,col:'#ff8646'},
+    {c:'К',rx:14.183,ry:34.994,rw:3.526,rh:4.693,lx:16.466,ly:40.153,lw:2.684,lh:7.527,col:'#4effbc'},
+    {c:'Л',rx:17.588,ry:36.501,rw:3.686,rh:4.925,lx:20.433,ly:40.428,lw:3.165,lh:7.729,col:'#83ffb8'},
+    {c:'М',rx:19.992,ry:35.168,rw:11.418,rh:6.837,lx:24.679,ly:40.127,lw:3.606,lh:8.737,col:'#ff8468'},
+    {c:'Н',rx:29.728,ry:35.226,rw:5.008,rh:6.779,lx:29.527,ly:40.259,lw:3.005,lh:7.662,col:'#ffa356'},
+    {c:'О',rx:33.534,ry:36.327,rw:3.806,rh:5.214,lx:33.855,ly:39.956,lw:3.365,lh:7.864,col:'#74ffb6'},
+    {c:'П',rx:37.58,ry:34.531,rw:3.285,rh:3.824,lx:38.703,ly:39.928,lw:3.285,lh:8.266,col:'#ffaa7c'},
+    {c:'Р',rx:43.95,ry:31.228,rw:3.486,rh:5.041,lx:43.71,ly:39.338,lw:3.245,lh:9.274,col:'#ffa879'},
+    {c:'С',rx:48.718,ry:34.009,rw:3.486,rh:5.098,lx:48.598,ly:38.91,lw:3.486,lh:8.737,col:'#3cc7ff'},
+    {c:'Т',rx:56.811,ry:31.46,rw:4.487,rh:4.925,lx:53.366,ly:39.061,lw:4.487,lh:9.074,col:'#ffaa72'},
+    {c:'У',rx:60.016,ry:31.228,rw:7.091,rh:5.272,lx:58.974,ly:38.811,lw:3.726,lh:9.341,col:'#ff9b67'},
+    {c:'Ф',rx:61.418,ry:33.372,rw:5.008,rh:3.302,lx:63.782,ly:38.693,lw:4.888,lh:11.896,col:'#ff9458'},
+    {c:'Х',rx:71.635,ry:31.634,rw:2.965,rh:3.824,lx:69.832,ly:38.568,lw:4.647,lh:12.03,col:'#ff7d52'},
+    {c:'Ц',rx:13.381,ry:49.189,rw:8.173,rh:7.3,lx:14.423,ly:53.914,lw:8.093,lh:12.971,col:'#ffc791'},
+    {c:'Ч',rx:23.037,ry:50.232,rw:4.688,rh:6.257,lx:23.918,ly:54.477,lw:3.926,lh:12.366,col:'#ffa384'},
+    {c:'Ш',rx:29.848,ry:50.811,rw:5.529,rh:5.678,lx:29.127,ly:54.915,lw:4.527,lh:11.896,col:'#ffcc51'},
+    {c:'Щ',rx:35.056,ry:52.086,rw:3.726,rh:4.403,lx:34.335,ly:55.291,lw:3.926,lh:11.492,col:'#4affa0'},
+    {c:'Ъ',rx:38.702,ry:52.086,rw:3.486,rh:4.403,lx:40.745,ly:55.269,lw:2.484,lh:10.955,col:'#56c2ff'},
+    {c:'Ы',rx:41.506,ry:50.348,rw:7.772,rh:6.141,lx:43.669,ly:55.701,lw:0.561,lh:9.745,col:'#ff795a'},
+    {c:'Ь',rx:45.433,ry:49.363,rw:3.566,rh:3.94,lx:45.393,ly:55.729,lw:2.804,lh:11.022,col:'#ffb487'},
+    {c:'Э',rx:47.516,ry:49.363,rw:5.569,rh:7.126,lx:49.359,ly:55.55,lw:3.806,lh:11.09,col:'#ffa253'},
+    {c:'Ю',rx:52.444,ry:49.884,rw:8.574,rh:6.605,lx:53.967,ly:55.666,lw:5.288,lh:11.09,col:'#ffea9e'},
+    {c:'Я',rx:60.337,ry:50.637,rw:4.247,rh:5.678,lx:60.817,ly:52.913,lw:4.567,lh:14.046,col:'#69ffba'},
+    {c:'?',rx:66.787,ry:49.189,rw:7.171,rh:7.3,lx:68.59,ly:54.92,lw:3.846,lh:11.829,col:'#ffceb6'}
+];
+const letterMap = {};
+
+function buildWall(){
+    const wrap = document.getElementById('wall-wrap');
+    wrap.querySelectorAll('.bulb,.letter-lit').forEach(n=>n.remove());
+
+    WALL.forEach(d=>{
+        const bulb = document.createElement('span');
+        bulb.className = 'bulb';
+        // вырезаем ровно эту лампочку из светлого кадра той же фотографии
+        bulb.style.cssText =
+            `left:${d.rx}%;top:${d.ry}%;width:${d.rw}%;height:${d.rh}%;--bc:${d.col};` +
+            `background-size:${100 / d.rw * 100}% ${100 / d.rh * 100}%;` +
+            `background-position:${d.rx / (100 - d.rw) * 100}% ${d.ry / (100 - d.rh) * 100}%;`;
+        wrap.appendChild(bulb);
+
+        // свет, упавший на бумагу вокруг буквы — тот же светлый кадр
+        const glow = document.createElement('span');
+        glow.className = 'letter-lit';
+        glow.style.cssText =
+            `left:${d.lx}%;top:${d.ly}%;width:${d.lw}%;height:${d.lh}%;--bc:${d.col};` +
+            `background-size:${100 / d.lw * 100}% ${100 / d.lh * 100}%;` +
+            `background-position:${d.lx / (100 - d.lw) * 100}% ${d.ly / (100 - d.lh) * 100}%;`;
+        wrap.appendChild(glow);
+
+        letterMap[d.c] = { bulb, glyph: glow };
+    });
+}
+
+let playing = false, revealed = false;
+
+function revealMessage(){
+    revealed = true;
+    document.getElementById('msg-text').textContent = currentMessage().word;
+    document.getElementById('byers-reveal').style.display = 'none';
+}
+function currentMessage(){
+    const i = Math.min(State.msgIndex, CONFIG.messages.length - 1);
+    return CONFIG.messages[i];
+}
+
+function updateMsgCaption(){
+    const total = CONFIG.messages.length;
+    const i = Math.min(State.msgIndex, total - 1);
+    document.getElementById('msg-cap').textContent =
+        'Послание ' + (i + 1) + ' из ' + total;
+}
+
+function playMessage(){
+    if (playing) return;
+    playing = true;
+    document.getElementById('byers-play').style.display = 'none';
+    document.getElementById('byers-again').style.display = 'none';
+    document.getElementById('byers-done').style.display = 'none';
+    document.getElementById('byers-reveal').style.display = 'none';
+    document.getElementById('wall-wrap').classList.add('dark');
+    const out = document.getElementById('msg-text');
+    out.textContent = '';
+    Object.values(letterMap).forEach(o=>{ o.bulb.classList.remove('on'); o.glyph.classList.remove('on'); });
+
+    const chars = [...currentMessage().word];
+    let idx = 0, prev = null;
+    revealed = false;
+    let dots = '';
+
+    function step(){
+        if (prev){ prev.bulb.classList.remove('on'); prev.glyph.classList.remove('on'); prev = null; }
+        if (idx >= chars.length){
+            document.getElementById('wall-wrap').classList.remove('dark');
+            document.getElementById('byers-again').style.display = '';
+            document.getElementById('byers-reveal').style.display = '';
+            if (State.msgIndex < CONFIG.messages.length)
+                document.getElementById('byers-done').style.display = '';
+            playing = false;
+            return;
+        }
+        const ch = chars[idx++];
+        if (ch === ' '){
+            dots += '   ';
+            out.textContent = dots;
+            setTimeout(step, CONFIG.wordPause);
+            return;
+        }
+        const node = letterMap[ch];
+        if (node){
+            node.bulb.classList.add('on');
+            node.glyph.classList.add('on');
+            prev = node;
+        }
+        // на экране — только сколько букв: разгадывают по лампочкам, а не читают готовое
+        dots += '•';
+        out.textContent = dots;
+        setTimeout(step, CONFIG.letterDelay);
+    }
+    setTimeout(step, 700);
+}
+
+function finishByers(){
+    const m = currentMessage();
+    if (State.msgIndex < CONFIG.messages.length){
+        State.unlocked[m.opens] = true;
+        note('Послание: ' + m.word);
+        State.msgIndex++;
+    }
+    if (State.msgIndex >= CONFIG.messages.length) State.done.byers = true;
+    go('map', refreshMap);
+}
+
+/* =========================================================
+   ЛОКАЦИИ
+   ========================================================= */
+function setLocMedia(opts){
+    if (opts.video){
+        locImage.style.display = 'none';
+        locVideo.style.display = '';
+        // если ролика ещё нет — тихо откатываемся на фотографию
+        locVideo.onerror = ()=>{
+            if (!opts.image) return;
+            locVideo.style.display = 'none';
+            locImage.style.display = '';
+            locImage.src = opts.image;
+        };
+        locVideo.src = opts.video;
+        locVideo.play().catch(()=>{});
+    } else {
+        locVideo.pause(); locVideo.removeAttribute('src'); locVideo.load();
+        locVideo.style.display = 'none';
+        locImage.style.display = '';
+        locImage.src = opts.image;
+    }
+    locDim.style.background = opts.dim || 'rgba(4,0,3,.62)';
+}
+
+function openLoc(id){
+    if (id === 'byers'){ go('byers', ()=>{
+        document.getElementById('byers-play').style.display = '';
+        document.getElementById('byers-again').style.display = 'none';
+        document.getElementById('byers-done').style.display = 'none';
+        document.getElementById('byers-reveal').style.display = 'none';
+        document.getElementById('byers-back').style.display =
+            State.msgIndex >= CONFIG.messages.length ? '' : 'none';
+        document.getElementById('msg-text').textContent = '';
+        updateMsgCaption();
+    }); return; }
+    go('loc', ()=> LOC_SCENES[id]());
+}
+
+/* ---- общий макет: заголовок, текст, кнопки ---- */
+function renderLoc(html){ locBody.innerHTML = html; }
+
+const LOC_SCENES = {
+
+    /* ---------- ПОЛИЦЕЙСКИЙ УЧАСТОК ---------- */
+    police(){
+        setLocMedia({ video:'assets/police.mp4', image:'assets/police-locks.jpg', dim:'rgba(4,0,3,.55)' });
+        renderLoc(`
+            <div class="card">
+                <h3>ПОЛИЦЕЙСКИЙ УЧАСТОК ХОУКИНСА</h3>
+                <p>В оружейной — запертый тубус на шести замках. Где-то в участке
+                лежит связка ключей: <b>подберите ключи к замкам</b>.<br>
+                Тот, кто откроет тубус, получит оружие.</p>
+                <div class="btn-row">
+                    <button class="btn ok" onclick="policeResult(true)">Замки открыты</button>
+                    <button class="btn ghost" onclick="policeResult(false)">Не справились</button>
+                </div>
+            </div>`);
+    },
+
+    /* ---------- ЛАБОРАТОРИЯ ---------- */
+    lab(){
+        setLocMedia({ video:'assets/lab.mp4', dim:'rgba(4,0,6,.6)' });
+        renderLoc(`
+            <div class="card">
+                <h3>НАЦИОНАЛЬНАЯ ЛАБОРАТОРИЯ ХОУКИНСА</h3>
+                <p>В коридорах — камеры наблюдения. <b>Пройдите к архиву, не попав в объектив.</b>
+                Кого сфотографируют — тот выбывает из вылазки.<br>
+                В архиве лежит секретное досье на объект.</p>
+                <div class="btn-row">
+                    <button class="btn ok" onclick="labResult(true)">Прошли незамеченными</button>
+                    <button class="btn ghost" onclick="labResult(false)">Нас засекли</button>
+                </div>
+            </div>`);
+    },
+
+    /* ---------- РАДИОСТАНЦИЯ ---------- */
+    radio(){
+        setLocMedia({ video:'assets/radio.mp4', dim:'rgba(2,2,8,.6)' });
+        renderLoc(`
+            <div class="card">
+                <h3>РАДИО ХОУКИНС</h3>
+                <p>В эфир пробилась запись из Изнанки — но звучит она задом наперёд.
+                <b>Переверните её и услышьте, где прячется Демогоргон.</b></p>
+                <div class="tape">
+                    <button class="btn small" onclick="playTape(true)">▶ Перевёрнутая</button>
+                    <button class="btn small ghost" onclick="playTape(false)">▶ Как есть</button>
+                    <button class="btn small ghost" onclick="stopTape()">■ Стоп</button>
+                    <div class="note" id="tape-note">Файл записи: ${CONFIG.tapeFile}</div>
+                </div>
+                <div class="btn-row" id="riddle-go">
+                    <button class="btn small" onclick="showRiddle()">Мы готовы ответить</button>
+                </div>
+                <div class="riddle-opts" id="riddle" style="display:none"></div>
+            </div>`);
+    },
+
+    /* ---------- ШКОЛА · ФИНАЛ ---------- */
+    school(){
+        setLocMedia({ video:'assets/school.mp4', dim:'rgba(8,0,2,.55)' });
+        const known = State.journal.length
+            ? '<ul>' + State.journal.map(t=>'<li>'+t+'</li>').join('') + '</ul>'
+            : '<p style="color:#ff8a8a">Вы идёте в бой вслепую — ничего не собрано.</p>';
+        renderLoc(`
+            <div class="card">
+                <h3>СРЕДНЯЯ ШКОЛА ХОУКИНСА</h3>
+                <p>Он здесь. Дальше — только бой.</p>
+                ${known}
+                <div class="btn-row">
+                    <button class="btn" onclick="startBattle()">В бой</button>
+                    <button class="btn ghost" onclick="go('map')">Ещё не готовы</button>
+                </div>
+            </div>`);
+    }
+};
+
+/* ---------- исходы локаций ---------- */
+function policeResult(ok){
+    State.done.police = true;
+    if (ok){
+        note('Оружие: бита с гвоздями');
+        renderLoc(`
+            <img class="reward" src="assets/police-bat.jpg" alt="Бита">
+            <div class="card">
+                <h3>ТУБУС ОТКРЫТ</h3>
+                <p>Внутри — <b>бита с гвоздями</b>. Теперь есть чем встретить тварь.</p>
+                <div class="btn-row"><button class="btn" onclick="go('map', refreshMap)">К карте</button></div>
+            </div>`);
+    } else {
+        note('Оружия нет — тубус остался заперт');
+        renderLoc(`
+            <img class="reward" src="assets/police-hopper.jpg" alt="Хоппер">
+            <div class="card">
+                <h3>ЗАМКИ НЕ ПОДДАЛИСЬ</h3>
+                <p>Шеф Хоппер выставил вас из участка. <b>В бой придётся идти без оружия.</b></p>
+                <div class="btn-row"><button class="btn ghost" onclick="go('map', refreshMap)">К карте</button></div>
+            </div>`);
+    }
+    refreshMap();
+}
+
+function labResult(ok){
+    State.done.lab = true;
+    if (ok){
+        note('Слабые места: звук, лапы, огонь в пасть');
+        renderLoc(`
+            <img class="reward" src="assets/dossier.jpg" alt="Досье">
+            <div class="card">
+                <h3>СЕКРЕТНОЕ ДОСЬЕ: ДЕМОГОРГОН</h3>
+                <ul>
+                    <li>Не имеет глаз — <b>идёт на звук</b></li>
+                    <li>Длинные лапы <b>уязвимы к переломам</b></li>
+                    <li>Раскрытая пасть <b>уязвима к огню</b></li>
+                </ul>
+                <div class="btn-row"><button class="btn" onclick="go('map', refreshMap)">К карте</button></div>
+            </div>`);
+    } else {
+        note('Досье не добыто — слабые места неизвестны');
+        renderLoc(`
+            <div class="card">
+                <h3>ВАС ЗАСЕКЛИ</h3>
+                <p>Камеры сработали, архив закрыли. <b>О слабых местах твари вы так и не узнали.</b></p>
+                <div class="btn-row"><button class="btn ghost" onclick="go('map', refreshMap)">К карте</button></div>
+            </div>`);
+    }
+    refreshMap();
+}
+
+function showRiddle(){
+    const go = document.getElementById('riddle-go');
+    const box = document.getElementById('riddle');
+    if (go) go.style.display = 'none';
+    if (box) box.style.display = '';
+    buildRiddle();
+}
+
+function buildRiddle(){
+    const box = document.getElementById('riddle');
+    if (!box || box.children.length) return;
+    CONFIG.riddleOptions.forEach(opt=>{
+        const b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = opt;
+        b.onclick = ()=>{
+            if (opt === CONFIG.riddleAnswer){
+                b.classList.add('right');
+                setTimeout(radioSuccess, 700);
+            } else {
+                b.classList.remove('wrong'); void b.offsetWidth; b.classList.add('wrong');
+            }
+        };
+        box.appendChild(b);
+    });
+}
+
+function radioSuccess(){
+    stopTape();
+    State.done.radio = true;
+    note('Он прячется в школе — в классе');
+    renderLoc(`
+        <div class="card">
+            <h3>СИГНАЛ РАСШИФРОВАН</h3>
+            <p>Сквозь помехи пробивается одно слово: <b>«КЛАСС»</b>.<br>
+            Демогоргон прячется в школе Хоукинса.</p>
+            <div class="btn-row"><button class="btn" onclick="go('map', refreshMap)">К карте</button></div>
+        </div>`);
+    refreshMap();
+}
+
+/* ---------- перевёрнутая запись ---------- */
+let audioCtx = null, tapeBuf = null, tapeSrc = null;
+async function loadTape(){
+    if (tapeBuf) return tapeBuf;
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const res = await fetch(CONFIG.tapeFile);
+    if (!res.ok) throw new Error('no file');
+    tapeBuf = await audioCtx.decodeAudioData(await res.arrayBuffer());
+    return tapeBuf;
+}
+async function playTape(reversed){
+    const note = document.getElementById('tape-note');
+    try {
+        const buf = await loadTape();
+        stopTape();
+        let play = buf;
+        if (reversed){
+            play = audioCtx.createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
+            for (let c = 0; c < buf.numberOfChannels; c++){
+                const src = buf.getChannelData(c), dst = play.getChannelData(c);
+                for (let i = 0, n = buf.length; i < n; i++) dst[i] = src[n - 1 - i];
+            }
+        }
+        tapeSrc = audioCtx.createBufferSource();
+        tapeSrc.buffer = play;
+        tapeSrc.connect(audioCtx.destination);
+        tapeSrc.start();
+        if (note) note.textContent = reversed ? 'Играет перевёрнутая запись' : 'Играет исходная запись';
+    } catch(e){
+        if (note) note.textContent = 'Файл ' + CONFIG.tapeFile + ' не найден — положите запись в assets/';
+    }
+}
+function stopTape(){ if (tapeSrc){ try{ tapeSrc.stop(); }catch(e){} tapeSrc = null; } }
+
+/* ---------- финал ---------- */
+function startBattle(){
+    State.done.school = true;
+    try { localStorage.setItem('hawkins-prep', JSON.stringify(State.journal)); } catch(e){}
+    wipe.classList.add('on');
+    setTimeout(()=>{ location.href = CONFIG.battleUrl; }, 500);
+}
+
+/* =========================================================
+   ВЕДУЩИЙ
+   ========================================================= */
+function unlockAll(){
+    Object.keys(State.unlocked).forEach(k=> State.unlocked[k] = true);
+    refreshMap();
+}
+function resetQuest(){
+    State.msgIndex = 0;
+    Object.keys(State.unlocked).forEach(k=> State.unlocked[k] = (k === 'byers'));
+    Object.keys(State.done).forEach(k=> State.done[k] = false);
+    State.journal = [];
+    stopTape();
+    go('title', refreshMap);
+}
+const hostPanel = document.getElementById('host-panel');
+document.getElementById('host-btn').onclick = ()=>{
+    hostPanel.style.display = hostPanel.style.display === 'block' ? 'none' : 'block';
+};
+function toggleFullscreen(){
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen().catch(()=>{});
+}
+document.getElementById('fs-btn').onclick = toggleFullscreen;
+
+document.addEventListener('keydown', e=>{
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    const k = e.key.toLowerCase();
+    if (k === 'm' || k === 'ь') hostPanel.style.display = hostPanel.style.display === 'block' ? 'none' : 'block';
+    else if (k === 'f' || k === 'а') toggleFullscreen();
+    else if (e.key === 'Escape' && current !== 'title') go('map', refreshMap);
+});
+
+/* =========================================================
+   СТАРТ
+   ========================================================= */
+window.addEventListener('resize', ()=>{ unit(); drawFog(); });
+document.addEventListener('fullscreenchange', ()=> setTimeout(()=>{ unit(); drawFog(); }, 150));
+unit();
+buildMap();
+buildWall();
+drawFog();
+refreshJournal();
+
+/* Прямая ссылка на экран: index.html#map, #byers, #police, #lab, #radio, #school */
+(function fromHash(){
+    const h = (location.hash || '').replace('#', '');
+    if (!h) return;
+    if (h === 'map' || h === 'intro' || h === 'title'){ show(h); return; }
+    if (LOCATIONS[h]){
+        unlockAll();
+        if (h === 'byers'){
+            show('byers');
+            updateMsgCaption();
+            if (location.search.includes('play')) playMessage();
+        } else { show('loc'); LOC_SCENES[h](); }
+    }
+})();
+</script>
+</body>
+</html>

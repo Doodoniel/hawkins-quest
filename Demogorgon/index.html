@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Битва с Демогоргоном | Stranger Things</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Cinzel:wght@700;900&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blood: #ff2118;
+            --blood-deep: #8b0000;
+            --ember: #ff6a2b;
+            --bone: #f4e9e6;
+            --void: #050106;
+            --u: 19.2px; /* 1% ширины сцены, ставится из JS */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: crosshair;
+        }
+
+        /* 16:9 сцена под проектор */
+        #game-viewport {
+            position: relative;
+            width: 100vw;
+            height: 56.25vw;
+            max-height: 100vh;
+            max-width: 177.78vh;
+            background-color: #000;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.95);
+            overflow: hidden;
+        }
+
+        /* --- ВИДЕОСЛОИ --- */
+        .game-video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            pointer-events: none;
+        }
+
+        #bg-video { z-index: 1; }
+
+        #action-video {
+            z-index: 16;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        #action-video.is-live { opacity: 1; }
+
+        #particles-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.6;
+        }
+
+        /* Фонарик, идущий за курсором — им «нащупывают» предметы */
+        #torch {
+            position: absolute;
+            inset: 0;
+            z-index: 6;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            background: radial-gradient(circle calc(var(--u) * 13) at var(--mx, 50%) var(--my, 50%),
+                        rgba(255, 214, 196, 0.14) 0%,
+                        rgba(255, 120, 90, 0.06) 45%,
+                        transparent 72%);
+        }
+        .booted #torch { opacity: 1; }
+
+        .vignette {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 7;
+            background: radial-gradient(ellipse at center, rgba(20, 0, 5, 0.05) 38%, rgba(5, 0, 2, 0.78) 84%, #020002 100%);
+            transition: background 1.2s ease;
+        }
+        .rage .vignette {
+            background: radial-gradient(ellipse at center, rgba(60, 0, 8, 0.12) 30%, rgba(40, 0, 4, 0.82) 80%, #10000200 100%);
+            animation: rage-vignette 1.6s infinite alternate ease-in-out;
+        }
+        @keyframes rage-vignette {
+            0%   { box-shadow: inset 0 0 calc(var(--u) * 6) rgba(255, 0, 0, 0.15); }
+            100% { box-shadow: inset 0 0 calc(var(--u) * 14) rgba(255, 0, 0, 0.45); }
+        }
+
+        /* --- VHS-СЛОЙ: строки развёртки, зерно, плывущая полоса --- */
+        #vhs {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        #vhs::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.30) 0px, rgba(0,0,0,0.30) 1px, transparent 1px, transparent 3px);
+            mix-blend-mode: multiply;
+        }
+        #vhs::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0;
+            height: 22%;
+            background: linear-gradient(180deg, transparent, rgba(255, 235, 235, 0.055), transparent);
+            animation: vhs-roll 9s linear infinite;
+        }
+        @keyframes vhs-roll {
+            0%   { top: -25%; }
+            100% { top: 105%; }
+        }
+
+        #grain {
+            position: absolute;
+            inset: -50%;
+            z-index: 11;
+            pointer-events: none;
+            opacity: 0.055;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+            animation: grain-shift 0.7s steps(4) infinite;
+        }
+        @keyframes grain-shift {
+            0%   { transform: translate(0, 0); }
+            25%  { transform: translate(-3%, 2%); }
+            50%  { transform: translate(2%, -3%); }
+            75%  { transform: translate(-2%, -2%); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* --- ПОДСВЕТКА ПРЕДМЕТОВ: свечение + уголки прицела --- */
+        #hotspot-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 18;
+            pointer-events: none;
+        }
+
+        .hs {
+            position: absolute;
+            pointer-events: auto;
+            --near: 0;
+            --accent: #ff4040;
+            cursor: pointer;
+        }
+
+        /* Мягкое свечение — «предмет откликается на курсор» */
+        .hs-aura {
+            position: absolute;
+            inset: -22%;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            background: radial-gradient(ellipse at 50% 50%,
+                        var(--accent) 0%,
+                        color-mix(in srgb, var(--accent) 55%, transparent) 28%,
+                        transparent 66%);
+            opacity: calc(var(--near) * 0.42);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            filter: blur(calc(var(--u) * 0.22));
+        }
+
+        /* Ядро свечения — плотнее, ровно по предмету */
+        .hs-core {
+            position: absolute;
+            inset: 4%;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            border-radius: 40%;
+            background: radial-gradient(ellipse at 50% 50%, var(--accent) 0%, transparent 62%);
+            opacity: calc(var(--near) * 0.24);
+            transition: opacity 0.3s ease;
+        }
+
+        /* Уголки прицела */
+        .hs-frame {
+            position: absolute;
+            inset: -6%;
+            pointer-events: none;
+            transform: scale(0.9);
+            opacity: 0;
+            transition: transform 0.22s cubic-bezier(0.2, 1.4, 0.4, 1), opacity 0.18s ease;
+        }
+        .hs-frame i {
+            position: absolute;
+            width: calc(var(--u) * 1.15);
+            height: calc(var(--u) * 1.15);
+            border: calc(var(--u) * 0.15) solid var(--accent);
+            box-shadow: 0 0 calc(var(--u) * 0.6) var(--accent),
+                        inset 0 0 calc(var(--u) * 0.3) rgba(255, 255, 255, 0.5);
+        }
+        .hs-frame i:nth-child(1) { left: 0;    top: 0;    border-right: 0; border-bottom: 0; }
+        .hs-frame i:nth-child(2) { right: 0;   top: 0;    border-left: 0;  border-bottom: 0; }
+        .hs-frame i:nth-child(3) { right: 0;   bottom: 0; border-left: 0;  border-top: 0; }
+        .hs-frame i:nth-child(4) { left: 0;    bottom: 0; border-right: 0; border-top: 0; }
+
+        .hs.is-hover .hs-aura { opacity: 0.78; }
+        .hs.is-hover .hs-core { opacity: 0.46; }
+        .hs.is-hover .hs-frame { opacity: 1; transform: scale(1); }
+
+        .hs.is-selected .hs-aura { opacity: 0.88; animation: hs-breathe 1.6s infinite alternate ease-in-out; }
+        .hs.is-selected .hs-core { opacity: 0.5; }
+        .hs.is-selected .hs-frame { opacity: 1; transform: scale(1.04); animation: hs-frame-pulse 1.6s infinite alternate ease-in-out; }
+        @keyframes hs-breathe {
+            0%   { opacity: 0.5; }
+            100% { opacity: 0.95; }
+        }
+        @keyframes hs-frame-pulse {
+            0%   { transform: scale(1.0); }
+            100% { transform: scale(1.07); }
+        }
+
+        .hs.is-used { --accent: #7c7c7c; }
+
+        /* Подпись предмета */
+        .hs-label {
+            position: absolute;
+            left: 50%;
+            bottom: 100%;
+            transform: translate(-50%, calc(var(--u) * 0.4));
+            background: rgba(8, 0, 2, 0.9);
+            border: 1px solid var(--accent);
+            color: var(--bone);
+            padding: calc(var(--u) * 0.22) calc(var(--u) * 0.7);
+            margin-bottom: calc(var(--u) * 0.5);
+            font-size: calc(var(--u) * 0.95);
+            font-weight: 700;
+            letter-spacing: calc(var(--u) * 0.08);
+            border-radius: 3px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            box-shadow: 0 0 calc(var(--u) * 0.8) rgba(0, 0, 0, 0.9);
+            text-transform: uppercase;
+        }
+        .hs.is-hover .hs-label,
+        .hs.is-selected .hs-label {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        /* Предмет у края сцены — подпись прижимается к краю, иначе её обрежет */
+        .hs.label-start .hs-label {
+            left: 0;
+            transform: translate(0, calc(var(--u) * 0.4));
+        }
+        .hs.label-start.is-hover .hs-label,
+        .hs.label-start.is-selected .hs-label { transform: translate(0, 0); }
+
+        .hs.label-end .hs-label {
+            left: auto;
+            right: 0;
+            transform: translate(0, calc(var(--u) * 0.4));
+        }
+        .hs.label-end.is-hover .hs-label,
+        .hs.label-end.is-selected .hs-label { transform: translate(0, 0); }
+
+        /* Предмет под шкалой HP — подпись уходит вниз, чтобы не налезала */
+        .hs.label-below .hs-label {
+            bottom: auto;
+            top: 100%;
+            margin-bottom: 0;
+            margin-top: calc(var(--u) * 0.5);
+            transform: translate(-50%, calc(var(--u) * -0.4));
+        }
+        .hs.label-below.is-hover .hs-label,
+        .hs.label-below.is-selected .hs-label {
+            transform: translate(-50%, 0);
+        }
+        .hs-label small {
+            display: block;
+            font-size: calc(var(--u) * 0.62);
+            letter-spacing: calc(var(--u) * 0.05);
+            color: #ff8a8a;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ HP --- */
+        .hp-container {
+            position: absolute;
+            top: 3%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 55%;
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            filter: drop-shadow(0 0 calc(var(--u) * 0.7) rgba(255, 0, 0, 0.55));
+        }
+
+        .boss-name {
+            position: relative;
+            font-family: 'Alfa Slab One', 'Cinzel', Georgia, serif;
+            font-size: calc(var(--u) * 2.3);
+            letter-spacing: calc(var(--u) * 0.55);
+            color: #ff2a2a;
+            text-shadow: 0 0 calc(var(--u) * 0.6) #ff0000,
+                         0 0 calc(var(--u) * 1.4) rgba(255, 0, 0, 0.75),
+                         0 0 calc(var(--u) * 2.2) #000;
+            margin-bottom: 0.6%;
+            animation: neon-flicker 6s infinite;
+        }
+        .boss-name::before,
+        .boss-name::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .boss-name::before { color: #00e5ff; transform: translateX(-0.09em); mix-blend-mode: screen; }
+        .boss-name::after  { color: #ff0044; transform: translateX(0.09em);  mix-blend-mode: screen; }
+
+        @keyframes neon-flicker {
+            0%, 92%, 100% { opacity: 1; }
+            93% { opacity: 0.35; }
+            94% { opacity: 1; }
+            95% { opacity: 0.5; }
+            96% { opacity: 1; }
+        }
+        .rage .boss-name { animation: neon-flicker 2.2s infinite, rage-name 0.9s infinite alternate; }
+        @keyframes rage-name {
+            0%   { transform: translateX(0) scale(1); }
+            100% { transform: translateX(calc(var(--u) * 0.08)) scale(1.015); }
+        }
+
+        .hp-bar-outer {
+            position: relative;
+            width: 100%;
+            height: calc(var(--u) * 2.1);
+            background: rgba(10, 2, 3, 0.88);
+            border: 2px solid #8b0000;
+            border-radius: 4px;
+            padding: 2px;
+            box-shadow: inset 0 0 calc(var(--u) * 0.8) #000, 0 0 calc(var(--u) * 0.8) rgba(255, 0, 0, 0.35);
+            overflow: hidden;
+        }
+        .hp-bar-outer.hp-hit { animation: hp-jolt 0.45s ease-out; }
+        @keyframes hp-jolt {
+            0%   { transform: translateX(0) scaleY(1); }
+            25%  { transform: translateX(calc(var(--u) * -0.3)) scaleY(1.12); }
+            55%  { transform: translateX(calc(var(--u) * 0.22)) scaleY(0.96); }
+            100% { transform: translateX(0) scaleY(1); }
+        }
+
+        .hp-ghost {
+            position: absolute;
+            top: 2px; left: 2px; bottom: 2px;
+            width: 100%;
+            background: linear-gradient(90deg, rgba(255,240,240,0.5), rgba(255,255,255,0.85));
+            border-radius: 2px;
+            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1) 0.35s;
+        }
+
+        .hp-bar-fill {
+            position: absolute;
+            top: 2px; left: 2px; bottom: 2px;
+            width: 100%;
+            background: linear-gradient(90deg, #4a0000 0%, #b30000 45%, #ff2a1a 100%);
+            border-radius: 2px;
+            transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.8s ease;
+            box-shadow: 0 0 calc(var(--u) * 0.8) rgba(255, 0, 0, 0.85);
+        }
+        .rage .hp-bar-fill {
+            background: linear-gradient(90deg, #7a0000 0%, #ff2a00 55%, #ffb03a 100%);
+            animation: rage-fill 0.85s infinite alternate ease-in-out;
+        }
+        @keyframes rage-fill {
+            0%   { filter: brightness(1); }
+            100% { filter: brightness(1.45); }
+        }
+
+        .hp-segments {
+            position: absolute;
+            inset: 2px;
+            background: repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 2px), rgba(0,0,0,0.75) calc(10% - 2px), rgba(0,0,0,0.75) 10%);
+            pointer-events: none;
+        }
+
+        .hp-shine {
+            position: absolute;
+            inset: 2px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.22), transparent 55%);
+            pointer-events: none;
+        }
+
+        .hp-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: calc(var(--u) * 1.05);
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: calc(var(--u) * 0.12);
+            text-shadow: 0 0 5px #000, 0 0 12px #000;
+            z-index: 3;
+        }
+
+        .rage-tag {
+            margin-top: calc(var(--u) * 0.35);
+            font-size: calc(var(--u) * 0.85);
+            font-weight: 900;
+            letter-spacing: calc(var(--u) * 0.3);
+            color: #ffb03a;
+            text-shadow: 0 0 calc(var(--u) * 0.6) #ff4400;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .rage .rage-tag { opacity: 1; animation: rage-tag-blink 1.1s infinite alternate; }
+        @keyframes rage-tag-blink {
+            0%   { opacity: 0.45; }
+            100% { opacity: 1; }
+        }
+
+        /* --- НИЖНЯЯ КАРТОЧКА ВЫБРАННОГО ПРЕДМЕТА --- */
+        .selection-banner {
+            position: absolute;
+            bottom: 3.5%;
+            left: 50%;
+            transform: translateX(-50%) translateY(calc(var(--u) * 0.6));
+            background: linear-gradient(180deg, rgba(24, 3, 7, 0.94), rgba(10, 1, 3, 0.94));
+            border: 1px solid rgba(255, 60, 50, 0.75);
+            padding: calc(var(--u) * 0.7) calc(var(--u) * 2.4);
+            font-size: calc(var(--u) * 1.4);
+            font-weight: 900;
+            letter-spacing: calc(var(--u) * 0.22);
+            color: #ffdddd;
+            box-shadow: 0 0 calc(var(--u) * 1.4) rgba(255, 0, 0, 0.4), inset 0 0 calc(var(--u) * 1.2) rgba(0,0,0,0.9);
+            z-index: 25;
+            opacity: 0;
+            pointer-events: none;
+            text-transform: uppercase;
+            text-align: center;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .selection-banner.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .selection-banner span {
+            color: #ff4a3a;
+            text-shadow: 0 0 calc(var(--u) * 0.5) #ff0000;
+        }
+        /* Уголки-скобки */
+        .selection-banner::before,
+        .selection-banner::after {
+            content: '';
+            position: absolute;
+            width: calc(var(--u) * 0.8);
+            height: calc(var(--u) * 0.8);
+            border: 2px solid var(--blood);
+        }
+        .selection-banner::before { top: -3px; left: -3px; border-right: none; border-bottom: none; }
+        .selection-banner::after  { bottom: -3px; right: -3px; border-left: none; border-top: none; }
+
+        /* Подсказка в начале боя */
+        #hint {
+            position: absolute;
+            bottom: 3.5%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 24;
+            font-size: calc(var(--u) * 0.95);
+            letter-spacing: calc(var(--u) * 0.14);
+            color: rgba(255, 210, 210, 0.75);
+            text-shadow: 0 0 calc(var(--u) * 0.6) #000;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+            text-align: center;
+        }
+        #hint.show { opacity: 1; animation: hint-breathe 2.6s infinite alternate ease-in-out; }
+        @keyframes hint-breathe {
+            0%   { opacity: 0.45; }
+            100% { opacity: 0.95; }
+        }
+
+        /* --- ВСПЫШКИ, ГЛИТЧ, БАННЕРЫ --- */
+        .screen-flash {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.12s ease;
+        }
+        .flash-damage { background: radial-gradient(circle, rgba(255,235,210,0.10) 0%, rgba(255,70,30,0.10) 42%, rgba(150,0,0,0.45) 100%); }
+        .flash-miss   { background: radial-gradient(circle, rgba(255,60,30,0.14) 0%, rgba(190,0,0,0.24) 45%, rgba(115,0,0,0.62) 100%); }
+
+        /* VHS-разрыв на промахе */
+        #glitch {
+            position: absolute;
+            inset: 0;
+            z-index: 52;
+            pointer-events: none;
+            opacity: 0;
+        }
+        #glitch.on { opacity: 1; }
+        #glitch .band {
+            position: absolute;
+            left: -5%;
+            width: 110%;
+            backdrop-filter: hue-rotate(90deg) saturate(2.5) contrast(1.4);
+            -webkit-backdrop-filter: hue-rotate(90deg) saturate(2.5) contrast(1.4);
+        }
+        #glitch.on .band:nth-child(1) { top: 18%; height: 7%;  animation: tear-a 0.42s steps(3) 2; }
+        #glitch.on .band:nth-child(2) { top: 44%; height: 4%;  animation: tear-b 0.36s steps(2) 2; }
+        #glitch.on .band:nth-child(3) { top: 67%; height: 9%;  animation: tear-a 0.5s  steps(4) 2; }
+        @keyframes tear-a {
+            0%   { transform: translateX(-4%); }
+            50%  { transform: translateX(5%); }
+            100% { transform: translateX(-2%); }
+        }
+        @keyframes tear-b {
+            0%   { transform: translateX(6%); }
+            100% { transform: translateX(-6%); }
+        }
+
+        .action-banner {
+            position: absolute;
+            top: 44%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.82);
+            font-size: calc(var(--u) * 4.4);
+            font-weight: 900;
+            text-align: center;
+            z-index: 60;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-family: 'Alfa Slab One', 'Cinzel', Georgia, serif;
+            letter-spacing: calc(var(--u) * 0.28);
+            white-space: nowrap;
+        }
+        .action-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .banner-hit    { color: #ffe066; text-shadow: 0 0 calc(var(--u)*1) #ff3b00, 0 0 calc(var(--u)*2.2) #ff0000, 0 0 calc(var(--u)*3) #000; }
+        .banner-miss   { color: #ff2a2a; text-shadow: 0 0 calc(var(--u)*1.2) #000, 0 0 calc(var(--u)*2.2) #ff0000; }
+        .banner-attack { color: #ff3300; font-size: calc(var(--u) * 3.6); text-shadow: 0 0 calc(var(--u)*1.5) #000, 0 0 calc(var(--u)*2.6) #ff0000; }
+
+        /* --- ЛЕТЯЩИЕ ЦИФРЫ УРОНА --- */
+        #fx-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 45;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .dmg-pop {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font-family: 'Alfa Slab One', 'Cinzel', Georgia, serif;
+            font-size: calc(var(--u) * 2.6);
+            color: #ffe066;
+            text-shadow: 0 0 calc(var(--u)*0.6) #ff3b00, 0 0 calc(var(--u)*1.6) #ff0000, 0 0 calc(var(--u)*2.4) #000;
+            animation: dmg-float 1.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+            white-space: nowrap;
+        }
+        .dmg-pop.crit {
+            font-size: calc(var(--u) * 3.6);
+            color: #fff3b0;
+        }
+        .dmg-pop .crit-tag {
+            display: block;
+            font-size: calc(var(--u) * 1.1);
+            letter-spacing: calc(var(--u) * 0.2);
+            color: #ff5c2b;
+            text-align: center;
+        }
+        @keyframes dmg-float {
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            18%  { opacity: 1; transform: translate(-50%, -60%) scale(1.15); }
+            35%  { transform: translate(-50%, -70%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -190%) scale(0.95); }
+        }
+
+        /* --- ЭКРАН ЗАГРУЗКИ / СТАРТА --- */
+        #boot-screen {
+            position: absolute;
+            inset: 0;
+            z-index: 150;
+            background: radial-gradient(ellipse at center, #170208 0%, #050005 70%, #000 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease;
+        }
+        #boot-screen.hide { opacity: 0; pointer-events: none; }
+
+        .boot-kicker {
+            font-size: calc(var(--u) * 0.95);
+            letter-spacing: calc(var(--u) * 0.6);
+            color: rgba(255, 170, 170, 0.7);
+            text-transform: uppercase;
+            margin-bottom: calc(var(--u) * 1.2);
+        }
+
+        .boot-title {
+            position: relative;
+            font-family: 'Alfa Slab One', 'Cinzel', Georgia, serif;
+            font-size: calc(var(--u) * 5.2);
+            line-height: 1;
+            color: #ff1f14;
+            letter-spacing: calc(var(--u) * 0.22);
+            text-align: center;
+            text-shadow: 0 0 calc(var(--u) * 0.5) #ff1f14,
+                         0 0 calc(var(--u) * 1.6) rgba(255, 0, 0, 0.9),
+                         0 0 calc(var(--u) * 3.5) rgba(255, 0, 0, 0.55),
+                         0 0 calc(var(--u) * 6) rgba(120, 0, 0, 0.5);
+            animation: neon-flicker 5s infinite;
+            -webkit-text-stroke: 1px rgba(255, 190, 180, 0.35);
+        }
+        .boot-title small {
+            display: block;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: calc(var(--u) * 1.1);
+            letter-spacing: calc(var(--u) * 0.9);
+            color: #ffd9d5;
+            text-shadow: 0 0 calc(var(--u) * 1) rgba(255, 0, 0, 0.8);
+            margin-top: calc(var(--u) * 1.1);
+            -webkit-text-stroke: 0;
+        }
+
+        .boot-bar {
+            width: 34%;
+            height: calc(var(--u) * 0.5);
+            margin-top: calc(var(--u) * 3);
+            border: 1px solid rgba(255, 60, 50, 0.45);
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .boot-bar i {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #6b0000, #ff2a1a);
+            box-shadow: 0 0 calc(var(--u) * 0.7) #ff0000;
+            transition: width 0.3s ease;
+        }
+        .boot-status {
+            margin-top: calc(var(--u) * 0.8);
+            font-size: calc(var(--u) * 0.8);
+            letter-spacing: calc(var(--u) * 0.25);
+            color: rgba(255, 190, 190, 0.65);
+            text-transform: uppercase;
+        }
+
+        .boot-btn {
+            margin-top: calc(var(--u) * 2.4);
+            background: linear-gradient(180deg, #8b0000 0%, #3d0000 100%);
+            border: 2px solid #ff4444;
+            color: #fff;
+            padding: calc(var(--u) * 0.9) calc(var(--u) * 3.2);
+            font-family: 'Montserrat', sans-serif;
+            font-size: calc(var(--u) * 1.2);
+            font-weight: 900;
+            letter-spacing: calc(var(--u) * 0.25);
+            cursor: pointer;
+            border-radius: 3px;
+            box-shadow: 0 0 calc(var(--u) * 1.5) rgba(255, 0, 0, 0.5);
+            transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        .boot-btn.ready { opacity: 1; pointer-events: all; animation: btn-breathe 2s infinite alternate ease-in-out; }
+        .boot-btn:hover { transform: scale(1.05); box-shadow: 0 0 calc(var(--u) * 2.6) rgba(255, 0, 0, 0.9); }
+        @keyframes btn-breathe {
+            0%   { box-shadow: 0 0 calc(var(--u) * 1.2) rgba(255, 0, 0, 0.45); }
+            100% { box-shadow: 0 0 calc(var(--u) * 2.4) rgba(255, 0, 0, 0.85); }
+        }
+
+        /* --- ЭКРАН ПОБЕДЫ --- */
+        #victory-screen {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, rgba(20, 0, 5, 0.9) 0%, rgba(3, 0, 2, 0.98) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.6s ease;
+        }
+        #victory-screen.show { opacity: 1; pointer-events: all; }
+
+        .vic-title {
+            font-family: 'Alfa Slab One', 'Cinzel', Georgia, serif;
+            font-size: calc(var(--u) * 4.2);
+            color: #ff2a2a;
+            text-shadow: 0 0 calc(var(--u)*1) #ff0000, 0 0 calc(var(--u)*2.4) #ff0000, 0 0 calc(var(--u)*4) rgba(255,0,0,0.5);
+            letter-spacing: calc(var(--u) * 0.3);
+            margin-bottom: calc(var(--u) * 1);
+            text-align: center;
+            animation: neon-flicker 5s infinite;
+        }
+        .vic-sub {
+            font-size: calc(var(--u) * 1.8);
+            letter-spacing: calc(var(--u) * 0.35);
+            color: #fff;
+            text-shadow: 0 0 calc(var(--u)*1) rgba(255,255,255,0.7);
+            margin-bottom: calc(var(--u) * 2.4);
+        }
+        .vic-stats {
+            display: flex;
+            gap: calc(var(--u) * 2.2);
+            margin-bottom: calc(var(--u) * 2.6);
+        }
+        .vic-stat {
+            min-width: calc(var(--u) * 8);
+            border: 1px solid rgba(255, 60, 50, 0.4);
+            background: rgba(20, 2, 5, 0.6);
+            padding: calc(var(--u) * 0.8) calc(var(--u) * 1.2);
+            text-align: center;
+            border-radius: 3px;
+        }
+        .vic-stat b {
+            display: block;
+            font-family: 'Alfa Slab One', 'Cinzel', serif;
+            font-size: calc(var(--u) * 2);
+            color: #ffe066;
+            text-shadow: 0 0 calc(var(--u) * 0.8) #ff3b00;
+        }
+        .vic-stat span {
+            display: block;
+            margin-top: calc(var(--u) * 0.3);
+            font-size: calc(var(--u) * 0.72);
+            letter-spacing: calc(var(--u) * 0.14);
+            color: rgba(255, 200, 200, 0.7);
+            text-transform: uppercase;
+        }
+        .vic-btn {
+            background: linear-gradient(180deg, #8b0000 0%, #4a0000 100%);
+            border: 2px solid #ff4444;
+            color: #fff;
+            padding: calc(var(--u) * 0.9) calc(var(--u) * 3);
+            font-family: 'Montserrat', sans-serif;
+            font-size: calc(var(--u) * 1.2);
+            font-weight: 900;
+            letter-spacing: calc(var(--u) * 0.2);
+            cursor: pointer;
+            border-radius: 3px;
+            box-shadow: 0 0 calc(var(--u) * 1.4) rgba(255, 0, 0, 0.5);
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        .vic-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 calc(var(--u) * 2.4) rgba(255, 0, 0, 0.85);
+            background: linear-gradient(180deg, #aa0000 0%, #600000 100%);
+        }
+
+        /* --- ВНУТРИИГРОВОЙ ДИАЛОГ (вместо системного confirm) --- */
+        #modal {
+            position: absolute;
+            inset: 0;
+            z-index: 210;
+            background: rgba(2, 0, 2, 0.82);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        #modal.show { display: flex; }
+        .modal-box {
+            background: linear-gradient(180deg, #180307, #0b0104);
+            border: 2px solid #8b0000;
+            box-shadow: 0 0 calc(var(--u) * 2.5) rgba(255, 0, 0, 0.35);
+            padding: calc(var(--u) * 2);
+            text-align: center;
+            border-radius: 5px;
+            max-width: 60%;
+        }
+        .modal-box p {
+            font-size: calc(var(--u) * 1.15);
+            font-weight: 700;
+            letter-spacing: calc(var(--u) * 0.08);
+            margin-bottom: calc(var(--u) * 1.6);
+            color: #ffdede;
+        }
+        .modal-row { display: flex; gap: calc(var(--u) * 0.8); justify-content: center; }
+        .modal-btn {
+            background: #2a050a;
+            border: 1px solid #8b0000;
+            color: #fff;
+            padding: calc(var(--u) * 0.55) calc(var(--u) * 1.6);
+            font-family: 'Montserrat', sans-serif;
+            font-size: calc(var(--u) * 0.85);
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 3px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .modal-btn:hover { background: #500810; border-color: #ff3333; }
+        .modal-btn.ghost { background: #1a1a1a; border-color: #444; color: #bbb; }
+        .modal-btn.ghost:hover { background: #2a2a2a; color: #fff; }
+
+        /* --- КНОПКИ-УГОЛКИ (панель ведущего, фуллскрин) --- */
+        .corner-btn {
+            position: absolute;
+            top: 10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(20, 0, 5, 0.4);
+            border: 1px solid rgba(255, 50, 50, 0.2);
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 4px;
+            z-index: 200;
+            transition: all 0.2s;
+        }
+        .corner-btn:hover {
+            background: rgba(139, 0, 0, 0.85);
+            color: #fff;
+            border-color: #ff3333;
+        }
+        #host-toggle-btn { right: 10px; }
+        #fs-btn { right: 48px; }
+
+        /* --- ПАНЕЛЬ ВЕДУЩЕГО --- */
+        #host-panel {
+            position: absolute;
+            top: 50px;
+            right: 15px;
+            width: 320px;
+            background: rgba(12, 2, 4, 0.96);
+            border: 2px solid #8b0000;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(255, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 16px;
+            z-index: 200;
+            display: none;
+            backdrop-filter: blur(8px);
+        }
+
+        .hp-section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #ff6666;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 50, 50, 0.2);
+            padding-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .hp-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+
+        .hp-input {
+            width: 100%;
+            background: #1a0508;
+            border: 1px solid #8b0000;
+            color: #fff;
+            padding: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 3px;
+            outline: none;
+            text-align: center;
+        }
+        .hp-input:focus { border-color: #ff3333; box-shadow: 0 0 8px rgba(255, 0, 0, 0.5); }
+
+        .host-btn {
+            background: #2a050a;
+            border: 1px solid #8b0000;
+            color: #fff;
+            padding: 8px 12px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            width: 100%;
+        }
+        .host-btn:hover { background: #500810; border-color: #ff3333; box-shadow: 0 0 10px rgba(255, 0, 0, 0.4); }
+
+        .host-btn-hit { background: #0d3813; border-color: #1b8a33; }
+        .host-btn-hit:hover { background: #165b20; border-color: #2beb54; box-shadow: 0 0 10px rgba(43, 235, 84, 0.4); }
+        .host-btn-miss { background: #4a0d0d; border-color: #9e1b1b; }
+        .host-btn-miss:hover { background: #731414; border-color: #ff3333; }
+        .host-btn-reset { background: #222; border-color: #444; color: #aaa; margin-top: 5px; }
+        .host-btn-reset:hover { background: #333; color: #fff; border-color: #888; }
+
+        .active-item-badge {
+            background: #200407;
+            border: 1px dashed #ff4444;
+            padding: 6px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #ff9999;
+            margin-bottom: 12px;
+            border-radius: 3px;
+        }
+
+        .vol-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .vol-row label { font-size: 10px; color: #ff9999; letter-spacing: 1px; white-space: nowrap; }
+        .vol-row input[type=range] { width: 100%; accent-color: #ff3333; cursor: pointer; }
+
+        .host-hint {
+            font-size: 10px;
+            color: rgba(255, 180, 180, 0.5);
+            letter-spacing: 0.5px;
+            line-height: 1.5;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 50, 50, 0.15);
+            padding-top: 8px;
+        }
+
+        /* --- ТРЯСКА --- */
+        .shake { animation: screen-shake 0.5s ease-in-out; }
+        @keyframes screen-shake {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-8px, 6px); }
+            40% { transform: translate(8px, -6px); }
+            60% { transform: translate(-6px, -4px); }
+            80% { transform: translate(6px, 4px); }
+        }
+        .heavy-shake { animation: heavy-screen-shake 0.7s ease-in-out; }
+        @keyframes heavy-screen-shake {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            15% { transform: translate(-14px, 10px) scale(1.02); }
+            30% { transform: translate(14px, -10px) scale(1.03); }
+            45% { transform: translate(-10px, -8px) scale(1.01); }
+            60% { transform: translate(10px, 8px) scale(1.02); }
+            75% { transform: translate(-6px, 4px) scale(1.01); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-viewport">
+        <!-- 1. Фоновое зацикленное видео сцены -->
+        <video id="bg-video" class="game-video" autoplay muted loop playsinline preload="auto" src="background.mp4"></video>
+
+        <!-- 2. Слой активного видео (попадание или атака) -->
+        <video id="action-video" class="game-video" playsinline preload="auto"></video>
+
+        <!-- 3. Споры Изнанки -->
+        <canvas id="particles-canvas"></canvas>
+
+        <!-- 4. Фонарик за курсором -->
+        <div id="torch"></div>
+
+        <div class="vignette"></div>
+
+        <!-- 5. Плёночная атмосфера -->
+        <div id="vhs"></div>
+        <div id="grain"></div>
+
+        <!-- 6. Подсветка предметов (строится из JS) -->
+        <div id="hotspot-layer"></div>
+
+        <!-- 7. Шкала HP Демогоргона -->
+        <div class="hp-container">
+            <div class="boss-name" data-text="DEMOGORGON">DEMOGORGON</div>
+            <div class="hp-bar-outer" id="hp-bar-outer">
+                <div class="hp-ghost" id="hp-ghost"></div>
+                <div class="hp-bar-fill" id="hp-fill"></div>
+                <div class="hp-segments"></div>
+                <div class="hp-shine"></div>
+                <div class="hp-text" id="hp-display">100 / 100 HP</div>
+            </div>
+            <div class="rage-tag">РАЗЪЯРЁН</div>
+        </div>
+
+        <!-- 8. Карточка выбранного предмета -->
+        <div class="selection-banner" id="selection-banner">
+            ВЫБРАНО: <span id="selected-item-name">—</span>
+        </div>
+
+        <div id="hint">Ищите предметы в классе — они откликаются, когда курсор рядом</div>
+
+        <!-- 9. Эффекты -->
+        <div id="fx-layer"></div>
+        <div class="action-banner" id="action-banner"></div>
+        <div class="screen-flash" id="screen-flash"></div>
+        <div id="glitch"><div class="band"></div><div class="band"></div><div class="band"></div></div>
+
+        <!-- 10. Победа -->
+        <div id="victory-screen">
+            <div class="vic-title">ДЕМОГОРГОН ПОВЕРЖЕН!</div>
+            <div class="vic-sub">ХОУКИНС СПАСЁН!</div>
+            <div class="vic-stats">
+                <div class="vic-stat"><b id="stat-turns">0</b><span>ходов</span></div>
+                <div class="vic-stat"><b id="stat-damage">0</b><span>урона</span></div>
+                <div class="vic-stat"><b id="stat-acc">0%</b><span>точность</span></div>
+            </div>
+            <button class="vic-btn" onclick="resetGame()">Играть снова</button>
+        </div>
+
+        <!-- 11. Стартовый экран -->
+        <div id="boot-screen">
+            <div class="boot-kicker">Хоукинс, 1983</div>
+            <div class="boot-title">БИТВА С ДЕМОГОРГОНОМ<small>STRANGER THINGS</small></div>
+            <div class="boot-bar"><i id="boot-bar-fill"></i></div>
+            <div class="boot-status" id="boot-status">Загрузка Изнанки…</div>
+            <button class="boot-btn" id="boot-btn">Войти в Изнанку</button>
+        </div>
+
+        <!-- 12. Диалог -->
+        <div id="modal">
+            <div class="modal-box">
+                <p id="modal-text">Сбросить бой?</p>
+                <div class="modal-row">
+                    <button class="modal-btn" id="modal-ok">Да</button>
+                    <button class="modal-btn ghost" id="modal-cancel">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 13. Кнопки -->
+        <div id="fs-btn" class="corner-btn" title="Полный экран (F)">⛶</div>
+        <div id="host-toggle-btn" class="corner-btn" title="Панель ведущего (M)">M</div>
+
+        <!-- 14. Панель ведущего -->
+        <div id="host-panel">
+            <div class="hp-section-title">Настройки боя</div>
+            <div class="hp-row">
+                <input type="number" id="host-max-hp" class="hp-input" value="100" placeholder="MAX HP" title="Максимальное HP">
+                <input type="number" id="host-curr-hp" class="hp-input" value="100" placeholder="CURR HP" title="Текущее HP">
+            </div>
+            <div class="hp-row">
+                <button class="host-btn" onclick="applyCustomHP()">Установить HP</button>
+            </div>
+
+            <div class="hp-section-title">Аудио</div>
+            <div class="hp-row">
+                <button class="host-btn" id="music-toggle-btn" onclick="toggleBGM()">Музыка: ВЫКЛ</button>
+            </div>
+            <div class="vol-row">
+                <label>ГРОМКОСТЬ</label>
+                <input type="range" id="vol-slider" min="0" max="100" value="70">
+            </div>
+
+            <div class="hp-section-title">Текущая атака</div>
+            <div class="active-item-badge" id="host-active-item">ПРЕДМЕТ НЕ ВЫБРАН</div>
+
+            <div class="hp-row">
+                <button class="host-btn host-btn-hit" onclick="showDamageControls()">[ ПОПАДАНИЕ ]</button>
+                <button class="host-btn host-btn-miss" onclick="triggerMiss()">[ ПРОМАХ ]</button>
+            </div>
+
+            <div id="host-damage-block" style="display: none; margin-bottom: 12px; background: rgba(0,255,0,0.05); padding: 8px; border-radius: 4px; border: 1px solid #1b8a33;">
+                <div style="font-size: 11px; margin-bottom: 6px; color: #88ff88;">ВВЕДИТЕ УРОН С КУБИКА:</div>
+                <div class="hp-row" style="margin-bottom: 6px;">
+                    <input type="number" id="host-damage-val" class="hp-input" value="4" min="1" max="999">
+                </div>
+                <button class="host-btn host-btn-hit" onclick="applyDamage()">Нанести урон</button>
+            </div>
+
+            <div class="hp-section-title" style="margin-top: 15px;">Управление игрой</div>
+            <button class="host-btn host-btn-reset" onclick="confirmReset()">Сбросить бой</button>
+
+            <div class="host-hint">M — панель · F — полный экран · ESC — снять выбор</div>
+        </div>
+    </div>
+
+    <!-- Аудио (имена файлов — точно как на диске) -->
+    <audio id="audio-bgm" loop src="bgm.MP3" preload="auto"></audio>
+    <audio id="audio-select" src="select.mp3" preload="auto"></audio>
+    <audio id="audio-hit" src="hit.MP3" preload="auto"></audio>
+    <audio id="audio-roar" src="roar.MP3" preload="auto"></audio>
+    <audio id="audio-victory" src="victory.MP3" preload="auto"></audio>
+
+    <!-- Прогрев видео в кэш, чтобы вставки стартовали мгновенно -->
+    <video id="warm-hit" src="hit.mp4" preload="auto" muted playsinline style="display:none"></video>
+    <video id="warm-attack" src="attack.mp4" preload="auto" muted playsinline style="display:none"></video>
+
+    <script>
+    /* ==========================================================
+       ПРЕДМЕТЫ.
+       box: [x, y, ширина, высота] в пикселях кадра видео (1920 x 1080),
+       снято по реальному кадру background.mp4. Пересчитывается в проценты,
+       поэтому подсветка садится на предмет при любом размере окна
+       и в полном экране.
+       ========================================================== */
+    const FRAME_W = 1920, FRAME_H = 1080;
+    const ITEMS = [
+        { id: 'glass',     name: 'РАЗБИТОЕ СТЕКЛО',    accent: '#bfefff', box: [183, 279, 184, 187] },
+        { id: 'flasks',    name: 'ХИМИЧЕСКИЕ КОЛБЫ',   accent: '#9fe8ff', box: [64, 446, 184, 124] },
+        { id: 'reagent',   name: 'КОЛБА С РЕАКТИВОМ',  accent: '#3dff9a', box: [0, 443, 76, 135] },
+        { id: 'megaphone', name: 'МЕГАФОН',            accent: '#ff6a5c', box: [30, 641, 176, 168] },
+        { id: 'flag',      name: 'АМЕРИКАНСКИЙ ФЛАГ',  accent: '#7ea6ff', box: [655, 158, 82, 165] },
+        { id: 'tv',        name: 'ТЕЛЕВИЗОР',          accent: '#9db4ff', box: [626, 320, 114, 100] },
+        { id: 'chair1',    name: 'СТУЛ №1',            accent: '#cdd8ff', box: [610, 552, 195, 68] },
+        { id: 'chair2',    name: 'СТУЛ №2',            accent: '#cdd8ff', box: [510, 655, 230, 155] },
+        { id: 'book',      name: 'КНИГА',              accent: '#ffd27a', box: [594, 902, 196, 102] },
+        { id: 'pointer',   name: 'УКАЗКА',             accent: '#ffcf8a', box: [1185, 306, 104, 275] },
+        { id: 'burner',    name: 'ГАЗОВАЯ ГОРЕЛКА',    accent: '#ff7a3c', box: [1346, 696, 116, 372] },
+        { id: 'globe',     name: 'ГЛОБУС',             accent: '#ffc14d', box: [1598, 438, 64, 88] }
+    ];
+
+    const GameState = {
+        maxHp: 100,
+        currentHp: 100,
+        selectedItem: null,
+        selectedId: null,
+        isVictory: false,
+        isBgmPlaying: false,
+        isBusy: false,
+        started: false,
+        volume: 0.7,
+        stats: { hits: 0, misses: 0, damage: 0 }
+    };
+
+    const viewport = document.getElementById('game-viewport');
+    const bgVideo = document.getElementById('bg-video');
+    const actionVideo = document.getElementById('action-video');
+    const hotspotLayer = document.getElementById('hotspot-layer');
+    const fxLayer = document.getElementById('fx-layer');
+    const hpFill = document.getElementById('hp-fill');
+    const hpGhost = document.getElementById('hp-ghost');
+    const hpBarOuter = document.getElementById('hp-bar-outer');
+    const hpDisplay = document.getElementById('hp-display');
+    const selectionBanner = document.getElementById('selection-banner');
+    const selectedItemName = document.getElementById('selected-item-name');
+    const hostActiveItem = document.getElementById('host-active-item');
+    const actionBanner = document.getElementById('action-banner');
+    const screenFlash = document.getElementById('screen-flash');
+    const glitch = document.getElementById('glitch');
+    const victoryScreen = document.getElementById('victory-screen');
+    const hostPanel = document.getElementById('host-panel');
+    const hostDamageBlock = document.getElementById('host-damage-block');
+    const hostDamageVal = document.getElementById('host-damage-val');
+    const hostMaxHpInput = document.getElementById('host-max-hp');
+    const hostCurrHpInput = document.getElementById('host-curr-hp');
+    const musicToggleBtn = document.getElementById('music-toggle-btn');
+    const hint = document.getElementById('hint');
+
+    const sfx = {
+        bgm: document.getElementById('audio-bgm'),
+        select: document.getElementById('audio-select'),
+        hit: document.getElementById('audio-hit'),
+        roar: document.getElementById('audio-roar'),
+        victory: document.getElementById('audio-victory')
+    };
+
+    /* ================== ЕДИНИЦА МАСШТАБА ================== */
+    function updateUnit() {
+        const u = viewport.clientWidth / 100;
+        document.documentElement.style.setProperty('--u', u + 'px');
+    }
+
+    /* ================== ПОСТРОЕНИЕ КОНТУРОВ ================== */
+    function buildHotspots() {
+        hotspotLayer.innerHTML = '';
+
+        ITEMS.forEach(item => {
+            const [bx, by, bw, bh] = item.box;
+            const el = document.createElement('div');
+            el.className = 'hs';
+            el.dataset.id = item.id;
+            el.style.setProperty('--accent', item.accent);
+            el.style.left = (bx / FRAME_W * 100) + '%';
+            el.style.top = (by / FRAME_H * 100) + '%';
+            el.style.width = (bw / FRAME_W * 100) + '%';
+            el.style.height = (bh / FRAME_H * 100) + '%';
+
+            // Если предмет стоит высоко и попадает под шкалу HP — подпись вниз
+            const underHpBar = (by / FRAME_H < 0.25) &&
+                               (bx / FRAME_W < 0.79) && ((bx + bw) / FRAME_W > 0.21);
+            if (underHpBar) el.classList.add('label-below');
+
+            // У края сцены подпись прижимаем к краю предмета, иначе её срежет
+            const centerX = (bx + bw / 2) / FRAME_W;
+            if (centerX < 0.15) el.classList.add('label-start');
+            else if (centerX > 0.85) el.classList.add('label-end');
+
+            el.innerHTML =
+                '<span class="hs-aura"></span>' +
+                '<span class="hs-core"></span>' +
+                '<span class="hs-frame"><i></i><i></i><i></i><i></i></span>' +
+                '<span class="hs-label">' + item.name + '</span>';
+
+            hotspotLayer.appendChild(el);
+
+            item.g = el;
+            item.label = el.querySelector('.hs-label');
+            item.used = false;
+
+            el.addEventListener('pointerenter', () => setHover(item, true));
+            el.addEventListener('pointerleave', () => setHover(item, false));
+            el.addEventListener('click', e => { e.stopPropagation(); selectItem(item); });
+        });
+
+        measureHotspots();
+    }
+
+    function measureHotspots() {
+        const vr = viewport.getBoundingClientRect();
+        ITEMS.forEach(item => {
+            const r = item.g.getBoundingClientRect();
+            item.rect = r;
+            item.cx = r.left + r.width / 2 - vr.left;
+            item.cy = r.top + r.height / 2 - vr.top;
+        });
+    }
+
+    function setHover(item, on) {
+        item.g.classList.toggle('is-hover', on);
+    }
+
+    function selectItem(item) {
+        if (GameState.isVictory || GameState.isBusy || !GameState.started) return;
+
+        // повторный клик по тому же предмету — снять выбор
+        if (GameState.selectedId === item.id) { clearSelection(); return; }
+
+        ITEMS.forEach(i => i.g.classList.remove('is-selected'));
+
+        playSound(sfx.select);
+        GameState.selectedItem = item.name;
+        GameState.selectedId = item.id;
+        item.g.classList.add('is-selected');
+
+        selectedItemName.innerText = item.name;
+        selectionBanner.classList.add('show');
+        hideHint();
+
+        hostActiveItem.innerText = 'АТАКА: ' + item.name;
+        hostDamageBlock.style.display = 'none';
+    }
+
+    function clearSelection() {
+        GameState.selectedItem = null;
+        GameState.selectedId = null;
+        ITEMS.forEach(i => i.g.classList.remove('is-selected'));
+        selectionBanner.classList.remove('show');
+        hostActiveItem.innerText = 'ПРЕДМЕТ НЕ ВЫБРАН';
+        hostDamageBlock.style.display = 'none';
+    }
+
+    function markUsed(id) {
+        const item = ITEMS.find(i => i.id === id);
+        if (!item) return;
+        item.used = true;
+        item.g.classList.add('is-used');
+        item.label.innerHTML = '<span>' + item.name + '</span><small>уже использован</small>';
+    }
+
+    /* Клик по пустому месту — снять выбор */
+    viewport.addEventListener('click', e => {
+        if (e.target === viewport || e.target.id === 'particles-canvas' ||
+            e.target.id === 'torch' || e.target.id === 'vhs' || e.target.id === 'grain' ||
+            e.target.id === 'hotspot-layer' ||
+            e.target.tagName === 'VIDEO' || e.target.classList.contains('vignette')) {
+            clearSelection();
+        }
+    });
+
+    /* ================== БЛИЗОСТЬ КУРСОРА ================== */
+    let mouseX = -9999, mouseY = -9999, mouseDirty = false;
+
+    viewport.addEventListener('pointermove', e => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        mouseDirty = true;
+    });
+    viewport.addEventListener('pointerleave', () => {
+        mouseX = mouseY = -9999;
+        mouseDirty = true;
+    });
+
+    function updateProximity() {
+        const vr = viewport.getBoundingClientRect();
+        const radius = Math.max(140, vr.width * 0.13);
+
+        // фонарик
+        viewport.style.setProperty('--mx', (mouseX - vr.left) + 'px');
+        viewport.style.setProperty('--my', (mouseY - vr.top) + 'px');
+
+        ITEMS.forEach(item => {
+            const r = item.rect;
+            if (!r) return;
+            const dx = Math.max(r.left - mouseX, 0, mouseX - r.right);
+            const dy = Math.max(r.top - mouseY, 0, mouseY - r.bottom);
+            const d = Math.hypot(dx, dy);
+            let near = 1 - d / radius;
+            near = near < 0 ? 0 : (near > 1 ? 1 : near);
+            near = near * near; // мягче на дальних дистанциях
+            item.g.style.setProperty('--near', near.toFixed(3));
+        });
+    }
+
+    /* ================== ЗВУК ================== */
+    function playSound(el) {
+        if (!el) return;
+        try {
+            el.currentTime = 0;
+            el.volume = GameState.volume;
+            el.play().catch(() => {});
+        } catch (e) {}
+    }
+
+    function toggleBGM() {
+        if (GameState.isBgmPlaying) {
+            sfx.bgm.pause();
+            GameState.isBgmPlaying = false;
+            musicToggleBtn.innerText = 'Музыка: ВЫКЛ';
+            musicToggleBtn.style.borderColor = '#8b0000';
+        } else {
+            sfx.bgm.volume = GameState.volume * 0.55;
+            sfx.bgm.play().then(() => {
+                GameState.isBgmPlaying = true;
+                musicToggleBtn.innerText = 'Музыка: ВКЛ';
+                musicToggleBtn.style.borderColor = '#2beb54';
+            }).catch(() => {});
+        }
+    }
+
+    document.getElementById('vol-slider').addEventListener('input', e => {
+        GameState.volume = e.target.value / 100;
+        sfx.bgm.volume = GameState.volume * 0.55;
+        actionVideo.volume = GameState.volume;
+    });
+
+    /* ================== HP ================== */
+    function updateHPView(animate) {
+        const percent = Math.max(0, Math.min(100, (GameState.currentHp / GameState.maxHp) * 100));
+        hpFill.style.width = percent + '%';
+        hpGhost.style.width = percent + '%';
+        hpDisplay.innerText = GameState.currentHp + ' / ' + GameState.maxHp + ' HP';
+
+        hostCurrHpInput.value = GameState.currentHp;
+        hostMaxHpInput.value = GameState.maxHp;
+
+        viewport.classList.toggle('rage', percent > 0 && percent <= 30);
+
+        if (animate) {
+            hpBarOuter.classList.remove('hp-hit');
+            void hpBarOuter.offsetWidth;
+            hpBarOuter.classList.add('hp-hit');
+        }
+
+        if (GameState.currentHp <= 0 && !GameState.isVictory) triggerVictory();
+    }
+
+    function applyCustomHP() {
+        const max = parseInt(hostMaxHpInput.value) || 100;
+        const curr = parseInt(hostCurrHpInput.value);
+        GameState.maxHp = Math.max(1, max);
+        GameState.currentHp = Math.max(0, Math.min(GameState.maxHp, isNaN(curr) ? GameState.maxHp : curr));
+        // мгновенно, без «призрачного» следа
+        hpGhost.style.transition = 'none';
+        updateHPView(false);
+        requestAnimationFrame(() => { hpGhost.style.transition = ''; });
+    }
+
+    function showDamageControls() {
+        hostDamageBlock.style.display = 'block';
+        hostDamageVal.focus();
+        hostDamageVal.select();
+    }
+
+    /* ================== ВИДЕОВСТАВКИ ================== */
+    let actionGuard = null;
+
+    function playActionVideo(src, onDone) {
+        clearTimeout(actionGuard);
+        actionVideo.onended = null;
+        actionVideo.onerror = null;
+
+        const finish = () => {
+            clearTimeout(actionGuard);
+            actionVideo.onended = null;
+            actionVideo.onerror = null;
+            actionVideo.classList.remove('is-live');
+            setTimeout(() => { try { actionVideo.pause(); } catch (e) {} }, 260);
+            if (onDone) onDone();
+        };
+
+        actionVideo.onended = finish;
+        actionVideo.onerror = finish;           // файл не найден — слой не залипнет
+        actionGuard = setTimeout(finish, 20000); // страховка на «зависшую» вставку
+
+        try {
+            actionVideo.src = src;
+            actionVideo.volume = GameState.volume;
+            actionVideo.currentTime = 0;
+        } catch (e) {}
+
+        actionVideo.classList.add('is-live');
+        const p = actionVideo.play();
+        if (p && p.catch) p.catch(finish);
+    }
+
+    /* ================== ПОПАДАНИЕ ================== */
+    function applyDamage() {
+        if (GameState.isVictory) return;
+        const dmg = parseInt(hostDamageVal.value) || 0;
+        if (dmg <= 0) return;
+
+        const attacker = GameState.selectedId;
+        const isCrit = dmg >= Math.max(12, GameState.maxHp * 0.18);
+
+        GameState.currentHp = Math.max(0, GameState.currentHp - dmg);
+        GameState.stats.hits++;
+        GameState.stats.damage += dmg;
+        updateHPView(true);
+
+        playSound(sfx.hit);
+        playActionVideo('hit.mp4');
+
+        flashScreen('flash-damage', 380);
+        shakeScreen(isCrit ? 'heavy-shake' : 'shake');
+        spawnDamage(dmg, attacker, isCrit);
+        showActionBanner(isCrit ? 'КРИТ! −' + dmg + ' HP' : '−' + dmg + ' HP', 'banner-hit', 1900);
+
+        if (attacker) markUsed(attacker);
+        hostDamageBlock.style.display = 'none';
+        clearSelection();
+        hideHint();
+    }
+
+    function spawnDamage(dmg, attackerId, isCrit) {
+        const item = ITEMS.find(i => i.id === attackerId);
+        const x = item ? item.cx : viewport.clientWidth * 0.5;
+        const y = item ? item.cy : viewport.clientHeight * 0.55;
+
+        const el = document.createElement('div');
+        el.className = 'dmg-pop' + (isCrit ? ' crit' : '');
+        el.innerHTML = (isCrit ? '<span class="crit-tag">КРИТ</span>' : '') + '−' + dmg;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        fxLayer.appendChild(el);
+        setTimeout(() => el.remove(), 1600);
+    }
+
+    /* ================== ПРОМАХ И АТАКА БОССА ================== */
+    function triggerMiss() {
+        if (GameState.isVictory || GameState.isBusy) return;
+        GameState.isBusy = true;
+        GameState.stats.misses++;
+
+        const attacker = GameState.selectedId;
+        if (attacker) markUsed(attacker);
+
+        flashScreen('flash-miss', 460);
+        runGlitch(520);
+        shakeScreen('shake');
+        showActionBanner('ПРОМАХ', 'banner-miss', 1100);
+        hideHint();
+
+        setTimeout(() => {
+            if (GameState.isVictory) { GameState.isBusy = false; return; }
+            showActionBanner('ДЕМОГОРГОН АТАКУЕТ!', 'banner-attack', 2500);
+            playSound(sfx.roar);
+            shakeScreen('heavy-shake');
+            playActionVideo('attack.mp4', () => { GameState.isBusy = false; });
+        }, 1200);
+
+        hostDamageBlock.style.display = 'none';
+        clearSelection();
+    }
+
+    function showActionBanner(text, className, duration) {
+        actionBanner.className = 'action-banner ' + className + ' show';
+        actionBanner.innerText = text;
+        clearTimeout(actionBanner._t);
+        actionBanner._t = setTimeout(() => actionBanner.classList.remove('show'), duration);
+    }
+
+    function flashScreen(className, duration) {
+        screenFlash.className = 'screen-flash ' + className;
+        screenFlash.style.opacity = '1';
+        clearTimeout(screenFlash._t);
+        screenFlash._t = setTimeout(() => { screenFlash.style.opacity = '0'; }, duration);
+    }
+
+    function runGlitch(duration) {
+        glitch.classList.remove('on');
+        void glitch.offsetWidth;
+        glitch.classList.add('on');
+        clearTimeout(glitch._t);
+        glitch._t = setTimeout(() => glitch.classList.remove('on'), duration);
+    }
+
+    function shakeScreen(type) {
+        viewport.classList.remove('shake', 'heavy-shake');
+        void viewport.offsetWidth;
+        viewport.classList.add(type || 'shake');
+        setTimeout(() => {
+            viewport.classList.remove(type || 'shake');
+            measureHotspots();
+        }, 750);
+    }
+
+    function hideHint() { hint.classList.remove('show'); }
+
+    /* ================== ПОБЕДА / СБРОС ================== */
+    function triggerVictory() {
+        GameState.isVictory = true;
+        GameState.isBusy = false;
+        if (GameState.isBgmPlaying) sfx.bgm.pause();
+        playSound(sfx.victory);
+        clearSelection();
+
+        const turns = GameState.stats.hits + GameState.stats.misses;
+        const acc = turns ? Math.round(GameState.stats.hits / turns * 100) : 0;
+        document.getElementById('stat-turns').innerText = turns;
+        document.getElementById('stat-damage').innerText = GameState.stats.damage;
+        document.getElementById('stat-acc').innerText = acc + '%';
+
+        setTimeout(() => victoryScreen.classList.add('show'), 900);
+    }
+
+    function resetGame() {
+        GameState.isVictory = false;
+        GameState.isBusy = false;
+        GameState.stats = { hits: 0, misses: 0, damage: 0 };
+        victoryScreen.classList.remove('show');
+        GameState.maxHp = parseInt(hostMaxHpInput.value) || 100;
+        GameState.currentHp = GameState.maxHp;
+
+        ITEMS.forEach(i => {
+            i.used = false;
+            i.g.classList.remove('is-used');
+            i.label.innerHTML = '<span>' + i.name + '</span>';
+        });
+
+        clearSelection();
+        hpGhost.style.transition = 'none';
+        updateHPView(false);
+        requestAnimationFrame(() => { hpGhost.style.transition = ''; });
+
+        if (GameState.isBgmPlaying) sfx.bgm.play().catch(() => {});
+        hint.classList.add('show');
+        setTimeout(hideHint, 9000);
+    }
+
+    /* ================== ДИАЛОГ ================== */
+    const modal = document.getElementById('modal');
+    let modalAction = null;
+
+    function askConfirm(text, onYes) {
+        document.getElementById('modal-text').innerText = text;
+        modalAction = onYes;
+        modal.classList.add('show');
+    }
+    document.getElementById('modal-ok').addEventListener('click', () => {
+        modal.classList.remove('show');
+        if (modalAction) modalAction();
+        modalAction = null;
+    });
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+        modal.classList.remove('show');
+        modalAction = null;
+    });
+
+    function confirmReset() {
+        askConfirm('Сбросить бой к начальному состоянию?', resetGame);
+    }
+
+    /* ================== ПАНЕЛЬ, ФУЛЛСКРИН, КЛАВИШИ ================== */
+    function toggleHostPanel() {
+        hostPanel.style.display = hostPanel.style.display === 'block' ? 'none' : 'block';
+    }
+    document.getElementById('host-toggle-btn').addEventListener('click', toggleHostPanel);
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            (document.documentElement.requestFullscreen || function () {}).call(document.documentElement).catch(() => {});
+        } else {
+            document.exitFullscreen().catch(() => {});
+        }
+    }
+    document.getElementById('fs-btn').addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', () => {
+        setTimeout(() => { resizeCanvas(); updateUnit(); measureHotspots(); }, 120);
+    });
+
+    document.addEventListener('keydown', e => {
+        const tag = (e.target.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea') {
+            if (e.key === 'Enter' && e.target === hostDamageVal) applyDamage();
+            return;
+        }
+        const k = e.key.toLowerCase();
+        if (k === 'm' || k === 'ь') toggleHostPanel();
+        else if (k === 'f' || k === 'а') toggleFullscreen();
+        else if (e.key === 'Escape') clearSelection();
+    });
+
+    /* ================== ЧАСТИЦЫ ИЗНАНКИ ================== */
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    const particles = [];
+
+    function resizeCanvas() {
+        canvas.width = viewport.clientWidth;
+        canvas.height = viewport.clientHeight;
+    }
+
+    class Particle {
+        constructor() { this.reset(true); }
+        reset(anywhere) {
+            this.x = Math.random() * canvas.width;
+            this.y = anywhere ? Math.random() * canvas.height : Math.random() * canvas.height;
+            this.size = Math.random() * 2.5 + 0.8;
+            this.speedY = Math.random() * 0.4 - 0.2;
+            this.speedX = Math.random() * 0.6 - 0.3;
+            this.alpha = Math.random() * 0.6 + 0.2;
+            this.alphaChange = Math.random() * 0.01 - 0.005;
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.alpha += this.alphaChange;
+            if (this.alpha <= 0.1 || this.alpha >= 0.8) this.alphaChange *= -1;
+            if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset(false);
+        }
+        draw(rage) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size * (rage ? 1.25 : 1), 0, Math.PI * 2);
+            ctx.fillStyle = rage
+                ? 'rgba(255, 130, 110, ' + this.alpha + ')'
+                : 'rgba(255, 180, 180, ' + this.alpha + ')';
+            ctx.shadowBlur = rage ? 10 : 6;
+            ctx.shadowColor = 'rgba(255, 50, 50, 0.8)';
+            ctx.fill();
+        }
+    }
+
+    for (let i = 0; i < 55; i++) particles.push(new Particle());
+
+    function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const rage = viewport.classList.contains('rage');
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+            particles[i].draw(rage);
+        }
+        if (mouseDirty) { updateProximity(); mouseDirty = false; }
+        requestAnimationFrame(loop);
+    }
+
+    /* ================== ЗАГРУЗКА И СТАРТ ================== */
+    const bootScreen = document.getElementById('boot-screen');
+    const bootBar = document.getElementById('boot-bar-fill');
+    const bootStatus = document.getElementById('boot-status');
+    const bootBtn = document.getElementById('boot-btn');
+
+    function runPreloader() {
+        const media = [
+            bgVideo,
+            document.getElementById('warm-hit'),
+            document.getElementById('warm-attack'),
+            sfx.bgm, sfx.select, sfx.hit, sfx.roar, sfx.victory
+        ];
+        media.forEach(m => { try { m.load(); } catch (e) {} });
+
+        const started = Date.now();
+        const timer = setInterval(() => {
+            const ready = media.filter(m => m.readyState >= 3 || m.error).length;
+            const pct = Math.round(ready / media.length * 100);
+            bootBar.style.width = pct + '%';
+            bootStatus.innerText = pct < 100 ? 'Загрузка Изнанки… ' + pct + '%' : 'Врата открыты';
+
+            // не держим ведущего дольше 12 секунд — стартуем в любом случае
+            if (ready === media.length || Date.now() - started > 12000) {
+                clearInterval(timer);
+                bootBar.style.width = '100%';
+                bootStatus.innerText = 'Врата открыты';
+                bootBtn.classList.add('ready');
+            }
+        }, 200);
+    }
+
+    function startGame() {
+        GameState.started = true;
+        bootScreen.classList.add('hide');
+        viewport.classList.add('booted');
+        bgVideo.play().catch(() => {});
+        if (!GameState.isBgmPlaying) toggleBGM();
+        hint.classList.add('show');
+        setTimeout(hideHint, 9000);
+        setTimeout(measureHotspots, 400);
+    }
+    bootBtn.addEventListener('click', startGame);
+
+    /* ================== ИНИЦИАЛИЗАЦИЯ ================== */
+    function boot() {
+        updateUnit();
+        resizeCanvas();
+        buildHotspots();
+        updateHPView(false);
+        runPreloader();
+        loop();
+    }
+
+    window.addEventListener('resize', () => {
+        updateUnit();
+        resizeCanvas();
+        measureHotspots();
+    });
+
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => setTimeout(measureHotspots, 50));
+    }
+
+    boot();
+    </script>
+</body>
+</html>
