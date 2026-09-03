@@ -144,6 +144,22 @@ body{
 /* доступная, но ещё не пройденная — тихо дышит, чтобы её нашли */
 .spot.open .spot-aura{opacity:.4;animation:spot-breathe 2.4s infinite alternate ease-in-out}
 @keyframes spot-breathe{0%{opacity:.22}100%{opacity:.58}}
+.spot.is-next .spot-aura{animation:next-pulse 1.7s infinite alternate ease-in-out}
+@keyframes next-pulse{0%{opacity:.30}100%{opacity:.78}}
+.spot.is-next .spot-frame{opacity:1;transform:scale(1)}
+.spot.is-next .spot-label{opacity:1;transform:translate(-50%,0)}
+.spot.is-next .spot-label small{color:#ffd27a}
+
+#map-hint{position:absolute;left:50%;bottom:calc(var(--u)*1.6);transform:translateX(-50%);
+    z-index:72;background:rgba(8,1,3,.86);border:1px solid rgba(255,90,70,.45);
+    border-radius:3px;padding:calc(var(--u)*.45) calc(var(--u)*1.3);
+    font-size:calc(var(--u)*.85);letter-spacing:calc(var(--u)*.1);color:#ffd9d2;
+    text-transform:uppercase;white-space:nowrap;pointer-events:none;
+    box-shadow:0 0 calc(var(--u)*1.2) rgba(0,0,0,.9);
+    animation:hint-pulse 2.4s infinite alternate ease-in-out}
+#map-hint b{color:#ff8a72}
+@keyframes hint-pulse{0%{opacity:.72}100%{opacity:1}}
+
 .spot.done{--c:#5dd48a !important;cursor:default}
 .spot.done .spot-aura{animation:none;opacity:.14}
 .spot.done:hover .spot-aura{opacity:.3}
@@ -417,6 +433,7 @@ body{
     <!-- ================= КАРТА ================= -->
     <div class="screen" id="screen-map">
         <div id="map-wrap"><div id="map-inner"><img id="mist" src="assets/fire.gif" alt=""><canvas id="fog"></canvas></div></div>
+        <div id="map-hint"></div>
         <div id="journal">
             <h4>Что мы узнали</h4>
             <ul id="journal-list"></ul>
@@ -561,6 +578,7 @@ function buildMap(){
         const [x,y,w,h] = loc.spot;
         const el = document.createElement('div');
         el.className = 'spot';
+        el.dataset.id = id;
         el.style.cssText = `left:${x}%;top:${y}%;width:${w}%;height:${h}%;--c:${loc.color}`;
         el.innerHTML = '<span class="spot-aura"></span>' +
                        '<span class="spot-frame"><i></i><i></i><i></i><i></i></span>' +
@@ -575,6 +593,37 @@ function buildMap(){
     refreshMap();
 }
 
+
+
+/* Следующий шаг маршрута: сначала пройти открытую локацию,
+   потом вернуться в дом Байерсов за новым посланием. */
+function nextTarget(){
+    const pending = ['police', 'lab', 'radio']
+        .find(id => State.unlocked[id] && !State.done[id]);
+    if (pending) return pending;
+    if (State.msgIndex < CONFIG.messages.length) return 'byers';
+    if (State.unlocked.school && !State.done.school) return 'school';
+    return null;
+}
+
+function updateMapHint(){
+    const el = document.getElementById('map-hint');
+    if (!el) return;
+    const id = nextTarget();
+    if (!id){ el.style.display = 'none'; return; }
+    el.style.display = '';
+    const name = LOCATIONS[id].name;
+    if (id === 'byers'){
+        el.innerHTML = 'Дальше — <b>дом Байерсов</b>: послание ' +
+            (State.msgIndex + 1) + ' из ' + CONFIG.messages.length;
+    } else if (id === 'school'){
+        el.innerHTML = 'Всё собрано. Дальше — <b>школа Хоукинса</b>';
+    } else {
+        const short = { police:'полицейский участок', lab:'лаборатория Хоукинса',
+                        radio:'радиостанция' }[id] || name;
+        el.innerHTML = 'Дальше — <b>' + short + '</b>';
+    }
+}
 
 /* Крупный план дома Байерсов, пока не открыт участок */
 const MAP_ZOOM = { scale: 2.6, at: [20.5, 30] };
@@ -595,6 +644,7 @@ function refreshMap(){
     // школа открывается, когда пройдены все три локации
     State.unlocked.school = State.done.police && State.done.lab && State.done.radio;
 
+    const target = nextTarget();
     Object.entries(LOCATIONS).forEach(([id, loc])=>{
         if (!loc.el) return;
         const done = State.done[id], open = State.unlocked[id];
@@ -605,10 +655,13 @@ function refreshMap(){
         let tag = done ? 'пройдено' : (open ? (id === 'school' ? 'финал' : 'доступно') : 'закрыто');
         if (id === 'byers' && !done)
             tag = 'послание ' + (State.msgIndex + 1) + ' из ' + CONFIG.messages.length;
+        if (id === target) tag = '◀ сюда · ' + tag;
         small.textContent = tag;
+        loc.el.classList.toggle('is-next', id === target);
     });
     kickFog();
     updateMapZoom();
+    updateMapHint();
     refreshJournal();
 }
 
