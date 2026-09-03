@@ -340,11 +340,10 @@ body{
     60%{transform:translate(-7px,-4px)}80%{transform:translate(7px,4px)}}
 
 /* ---------- НАГРАДА ---------- */
-.reward{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:71;
-    max-height:60%;max-width:54%;border:1px solid rgba(255,120,80,.45);border-radius:4px;
-    box-shadow:0 0 calc(var(--u)*3) rgba(0,0,0,.95);animation:reward-in .6s ease}
-@keyframes reward-in{from{opacity:0;transform:translate(-50%,-46%) scale(.94)}
-    to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+/* Открытый тубус, досье и прочее показываем во весь кадр
+   с медленным наездом, а не картинкой в картинке. */
+.loc-media.reveal{animation:reward-zoom 7s ease-out both}
+@keyframes reward-zoom{from{transform:scale(1.07)}to{transform:scale(1)}}
 .facts{display:flex;gap:calc(var(--u)*.7);flex-wrap:wrap;justify-content:center}
 .fact{background:rgba(22,6,4,.9);border:1px solid rgba(255,140,60,.4);border-radius:3px;
     padding:calc(var(--u)*.4) calc(var(--u)*.9);font-size:calc(var(--u)*.78);color:#ffe0cf}
@@ -958,6 +957,7 @@ function setLocMedia(opts){
     } else {
         locVideo.pause(); locVideo.removeAttribute('src'); locVideo.load();
         locVideo.style.display = 'none';
+        locImage.style.objectFit = opts.fit || 'cover';
         locImage.style.display = '';
         locImage.onload = remapSpots;
         locImage.src = opts.image;
@@ -1186,15 +1186,14 @@ function finishBar(title, text, btn, cls){
       </div>`;
 }
 
-function showReward(src){
-    const old = document.getElementById('loc-reward');
-    if (old) old.remove();
+function showReward(src, fit){
+    const stale = document.getElementById('loc-reward');
+    if (stale) stale.remove();
+    locImage.classList.remove('reveal');
     if (!src) return;
-    const img = document.createElement('img');
-    img.id = 'loc-reward';
-    img.className = 'reward';
-    img.src = src;
-    document.getElementById('screen-loc').appendChild(img);
+    setLocMedia({ image: src, dim: 'rgba(4,0,3,.12)', fit: fit });
+    void locImage.offsetWidth;
+    locImage.classList.add('reveal');
 }
 
 function policeResult(ok){
@@ -1202,12 +1201,13 @@ function policeResult(ok){
     clearSpots(); hideBadge();
     if (ok){
         note('Оружие: бита с гвоздями');
-        locFlash('rgba(255,230,180,.5)', 500);
+        locFlash('rgba(255,230,180,.55)', 520);
         showReward('assets/police-bat.jpg');
         renderLoc(finishBar('ТУБУС ОТКРЫТ',
             'Внутри — <b>бита с гвоздями</b>. Теперь есть чем встретить тварь.', 'К карте', 'ok'));
     } else {
         note('Оружия нет — тубус остался заперт');
+        locFlash('rgba(255,60,40,.3)', 400);
         showReward('assets/police-hopper.jpg');
         renderLoc(finishBar('ЗАМКИ НЕ ПОДДАЛИСЬ',
             'Хоппер выставил вас из участка. <b>В бой — без оружия.</b>', 'К карте', 'ghost'));
@@ -1220,7 +1220,7 @@ function labResult(ok){
     clearSpots(); hideBadge();
     if (ok){
         note('Слабые места: звук, лапы, огонь в пасть');
-        locFlash('rgba(180,255,200,.3)', 450);
+        locFlash('rgba(180,255,200,.35)', 480);
         showReward('assets/dossier.jpg');
         renderLoc(`
           <div class="taskbar">
