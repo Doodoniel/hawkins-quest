@@ -953,6 +953,145 @@
             padding-top: 8px;
         }
 
+
+        /* ================== ФАЗЫ БОЯ ================== */
+        /* вторая фаза: тварь злится — сцена уходит в багрянец */
+        .phase2 .vignette {
+            background: radial-gradient(ellipse at center, rgba(40, 0, 6, 0.10) 34%, rgba(24, 0, 3, 0.80) 82%, #0c0002 100%);
+        }
+        /* третья фаза: пульс как сердцебиение */
+        .rage .vignette { animation: heartbeat 1.15s infinite; }
+        @keyframes heartbeat {
+            0%   { box-shadow: inset 0 0 calc(var(--u) * 5) rgba(255, 0, 0, 0.10); }
+            12%  { box-shadow: inset 0 0 calc(var(--u) * 16) rgba(255, 0, 0, 0.55); }
+            26%  { box-shadow: inset 0 0 calc(var(--u) * 6) rgba(255, 0, 0, 0.14); }
+            38%  { box-shadow: inset 0 0 calc(var(--u) * 13) rgba(255, 0, 0, 0.42); }
+            100% { box-shadow: inset 0 0 calc(var(--u) * 5) rgba(255, 0, 0, 0.10); }
+        }
+
+        .phase-banner {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(.9);
+            z-index: 62;
+            font-family: 'Alfa Slab One', Georgia, serif;
+            font-size: calc(var(--u) * 2.4);
+            letter-spacing: calc(var(--u) * 0.3);
+            color: #ffb03a;
+            text-shadow: 0 0 calc(var(--u) * .8) #ff4400,
+                         0 0 calc(var(--u) * 2.4) rgba(255, 60, 0, .8),
+                         0 0 calc(var(--u) * 3.5) #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .35s ease, transform .35s cubic-bezier(.2, 1.5, .4, 1);
+            white-space: nowrap;
+        }
+        .phase-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* ================== СЕРИЯ ПОПАДАНИЙ ================== */
+        #combo {
+            position: absolute;
+            top: 13%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 26;
+            font-family: 'Alfa Slab One', Georgia, serif;
+            font-size: calc(var(--u) * 1.5);
+            letter-spacing: calc(var(--u) * .18);
+            color: #ffe066;
+            text-shadow: 0 0 calc(var(--u) * .6) #ff6a00, 0 0 calc(var(--u) * 1.8) rgba(255, 90, 0, .7);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s ease;
+        }
+        #combo.show { opacity: 1; animation: combo-pop .35s ease; }
+        @keyframes combo-pop {
+            0%   { transform: translateX(-50%) scale(.6); }
+            60%  { transform: translateX(-50%) scale(1.18); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        /* ================== УЯЗВИМОСТЬ ================== */
+        .dmg-pop .weak-tag {
+            display: block;
+            font-size: calc(var(--u) * 1.05);
+            letter-spacing: calc(var(--u) * .18);
+            color: #6ef7a0;
+            text-align: center;
+            text-shadow: 0 0 calc(var(--u) * .7) #0f9d58;
+        }
+        .flash-weak {
+            background: radial-gradient(circle, rgba(190,255,215,.16) 0%, rgba(60,220,130,.14) 45%, rgba(0,70,35,.42) 100%);
+        }
+
+        /* ================== ВСТУПЛЕНИЕ В БОЙ ================== */
+        #sting {
+            position: absolute;
+            inset: 0;
+            z-index: 120;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .8s ease;
+        }
+        #sting.on { opacity: 1; }
+        #sting span {
+            font-family: 'Alfa Slab One', Georgia, serif;
+            font-size: calc(var(--u) * 5);
+            letter-spacing: calc(var(--u) * .6);
+            color: #ff1f14;
+            text-shadow: 0 0 calc(var(--u) * .6) #ff1f14,
+                         0 0 calc(var(--u) * 2) rgba(255, 0, 0, .9),
+                         0 0 calc(var(--u) * 4.5) rgba(255, 0, 0, .6);
+            animation: sting-flicker 1.9s steps(1) both;
+        }
+        @keyframes sting-flicker {
+            0%, 8%   { opacity: 0; }
+            10%      { opacity: 1; }
+            13%      { opacity: 0; }
+            16%      { opacity: 1; }
+            20%      { opacity: .25; }
+            24%, 100%{ opacity: 1; }
+        }
+
+        /* ================== ПОБЕДА: МИР ВОЗВРАЩАЕТСЯ ================== */
+        .calm .vignette {
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(4, 6, 10, .7) 90%, #01030a 100%);
+            animation: none;
+            transition: background 2.4s ease;
+        }
+        .calm #bg-video, .calm #particles-canvas { filter: saturate(.35) brightness(.7); transition: filter 2.6s ease; }
+        .calm .hp-container { opacity: 0; transition: opacity 1.2s ease; }
+
+        /* ================== БЫСТРЫЙ УРОН ================== */
+        .dmg-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .dmg-grid button {
+            background: #12300f;
+            border: 1px solid #2a7a35;
+            color: #d8ffd8;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 0;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .dmg-grid button:hover {
+            background: #1d5c26;
+            border-color: #2beb54;
+            box-shadow: 0 0 8px rgba(43, 235, 84, .5);
+        }
+
         /* --- ТРЯСКА --- */
         .shake { animation: screen-shake 0.5s ease-in-out; }
         @keyframes screen-shake {
@@ -1019,6 +1158,8 @@
 
         <!-- 9. Эффекты -->
         <div id="fx-layer"></div>
+        <div class="phase-banner" id="phase-banner"></div>
+        <div id="combo"></div>
         <div class="action-banner" id="action-banner"></div>
         <div class="screen-flash" id="screen-flash"></div>
         <div id="glitch"><div class="band"></div><div class="band"></div><div class="band"></div></div>
@@ -1031,9 +1172,12 @@
                 <div class="vic-stat"><b id="stat-turns">0</b><span>ходов</span></div>
                 <div class="vic-stat"><b id="stat-damage">0</b><span>урона</span></div>
                 <div class="vic-stat"><b id="stat-acc">0%</b><span>точность</span></div>
+                <div class="vic-stat"><b id="stat-combo">×1</b><span>серия</span></div>
             </div>
             <button class="vic-btn" onclick="resetGame()">Играть снова</button>
         </div>
+
+        <div id="sting"><span>ДЕМОГОРГОН</span></div>
 
         <!-- 11. Стартовый экран -->
         <div id="boot-screen">
@@ -1089,6 +1233,7 @@
 
             <div id="host-damage-block" style="display: none; margin-bottom: 12px; background: rgba(0,255,0,0.05); padding: 8px; border-radius: 4px; border: 1px solid #1b8a33;">
                 <div style="font-size: 11px; margin-bottom: 6px; color: #88ff88;">ВВЕДИТЕ УРОН С КУБИКА:</div>
+                <div class="dmg-grid" id="dmg-grid"></div>
                 <div class="hp-row" style="margin-bottom: 6px;">
                     <input type="number" id="host-damage-val" class="hp-input" value="4" min="1" max="999">
                 </div>
@@ -1137,6 +1282,18 @@
         { id: 'globe',     name: 'ГЛОБУС',             accent: '#ffc14d', box: [1598, 438, 64, 88] }
     ];
 
+    /* Слабые места Демогоргона из досье лаборатории.
+       Если атакуют этим предметом — урон умножается и это видно на экране.
+       Чтобы отключить бонус, поставьте WEAK_MULT = 1. */
+    const WEAK_SPOTS = {
+        megaphone: 'ЗВУК',
+        burner:    'ОГОНЬ',
+        chair2:    'ПЕРЕЛОМ',
+        chair1:    'ПЕРЕЛОМ',
+        pointer:   'ПЕРЕЛОМ'
+    };
+    const WEAK_MULT = 2;
+
     const GameState = {
         maxHp: 100,
         currentHp: 100,
@@ -1147,7 +1304,9 @@
         isBusy: false,
         started: false,
         volume: 0.7,
-        stats: { hits: 0, misses: 0, damage: 0 }
+        combo: 0,
+        phase: 1,
+        stats: { hits: 0, misses: 0, damage: 0, bestCombo: 0, weak: 0 }
     };
 
     const viewport = document.getElementById('game-viewport');
@@ -1371,7 +1530,7 @@
         hostCurrHpInput.value = GameState.currentHp;
         hostMaxHpInput.value = GameState.maxHp;
 
-        viewport.classList.toggle('rage', percent > 0 && percent <= 30);
+        updatePhase(percent);
 
         if (animate) {
             hpBarOuter.classList.remove('hp-hit');
@@ -1380,6 +1539,63 @@
         }
 
         if (GameState.currentHp <= 0 && !GameState.isVictory) triggerVictory();
+    }
+
+    /* Три фазы: чем меньше HP, тем злее сцена */
+    function updatePhase(percent) {
+        const rage = percent > 0 && percent <= 30;
+        const angry = percent > 30 && percent <= 65;
+        viewport.classList.toggle('rage', rage);
+        viewport.classList.toggle('phase2', angry);
+
+        const phase = rage ? 3 : (angry ? 2 : 1);
+        if (phase !== GameState.phase && !GameState.isVictory) {
+            const grew = phase > GameState.phase;
+            GameState.phase = phase;
+            if (grew && phase === 2) announcePhase('ОН РАЗОЗЛИЛСЯ');
+            if (grew && phase === 3) announcePhase('ЯРОСТЬ ДЕМОГОРГОНА');
+        }
+        heartbeat(rage);
+    }
+
+    function announcePhase(text) {
+        const el = document.getElementById('phase-banner');
+        el.innerText = text;
+        el.classList.add('show');
+        flashScreen('flash-damage', 320);
+        shakeScreen('shake');
+        playSound(sfx.roar);
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    /* Глухой удар сердца в третьей фазе */
+    let heartTimer = null;
+    function heartbeat(on) {
+        if (on && !heartTimer) {
+            heartTimer = setInterval(thump, 1150);
+        } else if (!on && heartTimer) {
+            clearInterval(heartTimer);
+            heartTimer = null;
+        }
+    }
+    function thump() {
+        if (GameState.isVictory) { heartbeat(false); return; }
+        try {
+            const a = thump._c || (thump._c = new (window.AudioContext || window.webkitAudioContext)());
+            const now = a.currentTime;
+            [0, 0.22].forEach((off, i) => {
+                const o = a.createOscillator(), g = a.createGain();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(64, now + off);
+                o.frequency.exponentialRampToValueAtTime(32, now + off + 0.16);
+                g.gain.setValueAtTime(0.0001, now + off);
+                g.gain.exponentialRampToValueAtTime(i ? 0.10 : 0.16, now + off + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + off + 0.2);
+                o.connect(g); g.connect(a.destination);
+                o.start(now + off); o.stop(now + off + 0.25);
+            });
+        } catch (e) {}
     }
 
     function applyCustomHP() {
@@ -1434,26 +1650,36 @@
     }
 
     /* ================== ПОПАДАНИЕ ================== */
-    function applyDamage() {
+    function applyDamage(preset) {
         if (GameState.isVictory) return;
-        const dmg = parseInt(hostDamageVal.value) || 0;
-        if (dmg <= 0) return;
+        const base = parseInt(preset != null ? preset : hostDamageVal.value) || 0;
+        if (base <= 0) return;
 
         const attacker = GameState.selectedId;
+        const weak = attacker ? WEAK_SPOTS[attacker] : null;
+        const dmg = weak ? base * WEAK_MULT : base;
         const isCrit = dmg >= Math.max(12, GameState.maxHp * 0.18);
 
         GameState.currentHp = Math.max(0, GameState.currentHp - dmg);
         GameState.stats.hits++;
         GameState.stats.damage += dmg;
+        GameState.combo++;
+        if (GameState.combo > GameState.stats.bestCombo) GameState.stats.bestCombo = GameState.combo;
+        if (weak) GameState.stats.weak++;
         updateHPView(true);
 
         playSound(sfx.hit);
         playActionVideo('hit.mp4', null, 1.35);
 
-        flashScreen('flash-damage', 380);
-        shakeScreen(isCrit ? 'heavy-shake' : 'shake');
-        spawnDamage(dmg, attacker, isCrit);
-        showActionBanner(isCrit ? 'КРИТ! −' + dmg + ' HP' : '−' + dmg + ' HP', 'banner-hit', 1900);
+        flashScreen(weak ? 'flash-weak' : 'flash-damage', 380);
+        shakeScreen(isCrit || weak ? 'heavy-shake' : 'shake');
+        spawnDamage(dmg, attacker, isCrit, weak);
+        showCombo();
+
+        const label = weak
+            ? weak + '! −' + dmg + ' HP'
+            : (isCrit ? 'КРИТ! −' + dmg + ' HP' : '−' + dmg + ' HP');
+        showActionBanner(label, 'banner-hit', 1900);
 
         if (attacker) markUsed(attacker);
         hostDamageBlock.style.display = 'none';
@@ -1461,14 +1687,27 @@
         hideHint();
     }
 
-    function spawnDamage(dmg, attackerId, isCrit) {
+    /* Серия попаданий подряд */
+    function showCombo() {
+        const el = document.getElementById('combo');
+        if (GameState.combo < 2) { el.classList.remove('show'); return; }
+        el.innerText = 'СЕРИЯ ×' + GameState.combo;
+        el.classList.remove('show');
+        void el.offsetWidth;
+        el.classList.add('show');
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function spawnDamage(dmg, attackerId, isCrit, weak) {
         const item = ITEMS.find(i => i.id === attackerId);
         const x = item ? item.cx : viewport.clientWidth * 0.5;
         const y = item ? item.cy : viewport.clientHeight * 0.55;
 
         const el = document.createElement('div');
-        el.className = 'dmg-pop' + (isCrit ? ' crit' : '');
-        el.innerHTML = (isCrit ? '<span class="crit-tag">КРИТ</span>' : '') + '−' + dmg;
+        el.className = 'dmg-pop' + (isCrit || weak ? ' crit' : '');
+        el.innerHTML = (weak ? '<span class="weak-tag">УЯЗВИМОСТЬ ×' + WEAK_MULT + '</span>'
+                             : (isCrit ? '<span class="crit-tag">КРИТ</span>' : '')) + '−' + dmg;
         el.style.left = x + 'px';
         el.style.top = y + 'px';
         fxLayer.appendChild(el);
@@ -1480,6 +1719,8 @@
         if (GameState.isVictory || GameState.isBusy) return;
         GameState.isBusy = true;
         GameState.stats.misses++;
+        GameState.combo = 0;
+        document.getElementById('combo').classList.remove('show');
 
         const attacker = GameState.selectedId;
         if (attacker) markUsed(attacker);
@@ -1540,23 +1781,44 @@
     function triggerVictory() {
         GameState.isVictory = true;
         GameState.isBusy = false;
+        heartbeat(false);
         if (GameState.isBgmPlaying) sfx.bgm.pause();
-        playSound(sfx.victory);
         clearSelection();
+
+        // последний удар: вспышка, тряска, рёв обрывается
+        flashScreen('flash-damage', 700);
+        shakeScreen('heavy-shake');
+        playSound(sfx.roar);
+        document.getElementById('combo').classList.remove('show');
+
+        // и мир возвращается: багрянец уходит, сцена выцветает
+        setTimeout(() => {
+            viewport.classList.remove('rage', 'phase2');
+            viewport.classList.add('calm');
+            playSound(sfx.victory);
+        }, 700);
 
         const turns = GameState.stats.hits + GameState.stats.misses;
         const acc = turns ? Math.round(GameState.stats.hits / turns * 100) : 0;
         document.getElementById('stat-turns').innerText = turns;
         document.getElementById('stat-damage').innerText = GameState.stats.damage;
         document.getElementById('stat-acc').innerText = acc + '%';
+        const cb = document.getElementById('stat-combo');
+        if (cb) cb.innerText = '×' + Math.max(1, GameState.stats.bestCombo);
 
-        setTimeout(() => victoryScreen.classList.add('show'), 900);
+        setTimeout(() => victoryScreen.classList.add('show'), 2100);
     }
 
     function resetGame() {
         GameState.isVictory = false;
         GameState.isBusy = false;
-        GameState.stats = { hits: 0, misses: 0, damage: 0 };
+        GameState.combo = 0;
+        GameState.phase = 1;
+        GameState.stats = { hits: 0, misses: 0, damage: 0, bestCombo: 0, weak: 0 };
+        heartbeat(false);
+        viewport.classList.remove('calm', 'phase2', 'rage');
+        document.getElementById('combo').classList.remove('show');
+        document.getElementById('phase-banner').classList.remove('show');
         victoryScreen.classList.remove('show');
         GameState.maxHp = parseInt(hostMaxHpInput.value) || 100;
         GameState.currentHp = GameState.maxHp;
@@ -1629,6 +1891,19 @@
         else if (k === 'f' || k === 'а') toggleFullscreen();
         else if (e.key === 'Escape') clearSelection();
     });
+
+    /* Быстрый урон: одно нажатие вместо ввода числа */
+    (function buildDamageGrid() {
+        const grid = document.getElementById('dmg-grid');
+        if (!grid) return;
+        for (let n = 1; n <= 12; n++) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = n;
+            b.onclick = () => applyDamage(n);
+            grid.appendChild(b);
+        }
+    })();
 
     /* ================== ЧАСТИЦЫ ИЗНАНКИ ================== */
     const canvas = document.getElementById('particles-canvas');
@@ -1720,10 +1995,19 @@
         bootScreen.classList.add('hide');
         viewport.classList.add('booted');
         bgVideo.play().catch(() => {});
-        if (!GameState.isBgmPlaying) toggleBGM();
-        hint.classList.add('show');
-        setTimeout(hideHint, 9000);
         setTimeout(measureHotspots, 400);
+
+        // короткая заставка: имя твари сквозь помехи, рёв и удар по камере
+        const sting = document.getElementById('sting');
+        sting.classList.add('on');
+        playSound(sfx.roar);
+        setTimeout(() => shakeScreen('heavy-shake'), 900);
+        setTimeout(() => {
+            sting.classList.remove('on');
+            if (!GameState.isBgmPlaying) toggleBGM();
+            hint.classList.add('show');
+            setTimeout(hideHint, 9000);
+        }, 2300);
     }
     bootBtn.addEventListener('click', startGame);
 
