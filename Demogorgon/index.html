@@ -1402,7 +1402,7 @@
     /* ================== ВИДЕОВСТАВКИ ================== */
     let actionGuard = null;
 
-    function playActionVideo(src, onDone) {
+    function playActionVideo(src, onDone, rate) {
         clearTimeout(actionGuard);
         actionVideo.onended = null;
         actionVideo.onerror = null;
@@ -1424,6 +1424,8 @@
             actionVideo.src = src;
             actionVideo.volume = GameState.volume;
             actionVideo.currentTime = 0;
+            actionVideo.playbackRate = rate || 1;
+            actionVideo.defaultPlaybackRate = rate || 1;
         } catch (e) {}
 
         actionVideo.classList.add('is-live');
@@ -1446,7 +1448,7 @@
         updateHPView(true);
 
         playSound(sfx.hit);
-        playActionVideo('hit.mp4');
+        playActionVideo('hit.mp4', null, 1.35);
 
         flashScreen('flash-damage', 380);
         shakeScreen(isCrit ? 'heavy-shake' : 'shake');
@@ -1485,7 +1487,7 @@
         flashScreen('flash-miss', 460);
         runGlitch(520);
         shakeScreen('shake');
-        showActionBanner('ПРОМАХ', 'banner-miss', 1100);
+        showActionBanner('ПРОМАХ', 'banner-miss', 800);
         hideHint();
 
         setTimeout(() => {
@@ -1493,8 +1495,8 @@
             showActionBanner('ДЕМОГОРГОН АТАКУЕТ!', 'banner-attack', 2500);
             playSound(sfx.roar);
             shakeScreen('heavy-shake');
-            playActionVideo('attack.mp4', () => { GameState.isBusy = false; });
-        }, 1200);
+            playActionVideo('attack.mp4', () => { GameState.isBusy = false; }, 1.75);
+        }, 850);
 
         hostDamageBlock.style.display = 'none';
         clearSelection();

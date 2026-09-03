@@ -100,8 +100,11 @@ body{
 #screen-map{background:#0a0608}
 #map-wrap{
     position:relative;height:100%;aspect-ratio:2398/1792;margin:auto;overflow:hidden;
-    background:url('assets/map.jpg') center/100% 100% no-repeat;
 }
+/* карта и туман едут вместе: сначала крупный план дома Байерсов, потом отъезд */
+#map-inner{position:absolute;inset:0;transform-origin:0 0;
+    background:url('assets/map.jpg') center/100% 100% no-repeat;
+    transition:transform 1.8s cubic-bezier(.5,.05,.2,1)}
 /* дымка — тот же анимированный кадр, что дрейфует над картой в презентации */
 #mist{position:absolute;left:6.7%;top:-41.2%;width:91.7%;height:182.5%;
     z-index:55;pointer-events:none;mix-blend-mode:screen;opacity:.16}
@@ -398,7 +401,7 @@ body{
     </div>
 
     <!-- ================= ИНТРО ================= -->
-    <div class="screen" id="screen-intro" style="background-image:url('assets/map.jpg')">
+    <div class="screen" id="screen-intro" style="background-image:url('assets/title.jpg')">
         <div class="dim"></div>
         <div style="position:relative;z-index:5;display:flex;flex-direction:column;align-items:center">
             <div class="screen-head">МЫ В ХОУКИНСЕ</div>
@@ -414,7 +417,7 @@ body{
 
     <!-- ================= КАРТА ================= -->
     <div class="screen" id="screen-map">
-        <div id="map-wrap"><img id="mist" src="assets/fire.gif" alt=""><canvas id="fog"></canvas></div>
+        <div id="map-wrap"><div id="map-inner"><img id="mist" src="assets/fire.gif" alt=""><canvas id="fog"></canvas></div></div>
         <div id="journal">
             <h4>Что мы узнали</h4>
             <ul id="journal-list"></ul>
@@ -512,9 +515,9 @@ const State = {
 const LOCATIONS = {
     byers:  { name: 'ДОМ БАЙЕРСОВ',        color:'#ffd27a', spot:[12,20,17,20] },
     radio:  { name: 'РАДИОСТАНЦИЯ',        color:'#9fe8ff', spot:[35,13,13,34] },
-    lab:    { name: 'ЛАБОРАТОРИЯ ХОУКИНСА',color:'#7ea6ff', spot:[57,12,37,40] },
+    lab:    { name: 'ЛАБОРАТОРИЯ ХОУКИНСА',color:'#7ea6ff', spot:[58,15,35,32], fogScale:0.62 },
     police: { name: 'ПОЛИЦЕЙСКИЙ УЧАСТОК', color:'#ff9a5c', spot:[49,54,17,25] },
-    school: { name: 'ШКОЛА ХОУКИНСА',      color:'#ff5c4c', spot:[69,53,27,34] }
+    school: { name: 'ШКОЛА ХОУКИНСА',      color:'#ff5c4c', spot:[69,53,27,34], fogScale:0.8 }
 };
 
 const stage = document.getElementById('stage');
@@ -541,7 +544,6 @@ function go(id, after){
     setTimeout(()=>{
         if (id !== 'loc'){
             locVideo.pause(); locVideo.removeAttribute('src'); locVideo.load();
-            LAB.running = false; clearTimeout(LAB.timer);
             clearSpots(); hideBadge(); showReward(null);
         }
         show(id);
@@ -554,7 +556,7 @@ function go(id, after){
    КАРТА
    ========================================================= */
 function buildMap(){
-    const wrap = document.getElementById('map-wrap');
+    const wrap = document.getElementById('map-inner');
     wrap.querySelectorAll('.spot').forEach(s=>s.remove());
     Object.entries(LOCATIONS).forEach(([id, loc])=>{
         const [x,y,w,h] = loc.spot;
@@ -574,6 +576,22 @@ function buildMap(){
     refreshMap();
 }
 
+
+/* Крупный план дома Байерсов, пока не открыт участок */
+const MAP_ZOOM = { scale: 2.6, at: [20.5, 30] };
+function updateMapZoom(){
+    const inner = document.getElementById('map-inner');
+    if (!inner) return;
+    if (State.unlocked.police){
+        inner.style.transform = 'scale(1) translate(0%, 0%)';
+    } else {
+        const s = MAP_ZOOM.scale;
+        const tx = (50 / s - MAP_ZOOM.at[0]).toFixed(2);
+        const ty = (50 / s - MAP_ZOOM.at[1]).toFixed(2);
+        inner.style.transform = `scale(${s}) translate(${tx}%, ${ty}%)`;
+    }
+}
+
 function refreshMap(){
     // школа открывается, когда пройдены все три локации
     State.unlocked.school = State.done.police && State.done.lab && State.done.radio;
@@ -591,6 +609,7 @@ function refreshMap(){
         small.textContent = tag;
     });
     kickFog();
+    updateMapZoom();
     refreshJournal();
 }
 
@@ -674,14 +693,24 @@ function drawFog(){
 
     // прожигаем окна там, где локация уже открыта
     ctx.globalCompositeOperation = 'destination-out';
+
+    // сначала дороги — чтобы окна локаций легли поверх и были ярче
+    TRAILS.forEach(tr=>{
+        const ka = LOCATIONS[tr.a] && LOCATIONS[tr.a].fogR || 0;
+        const kb = LOCATIONS[tr.b] && LOCATIONS[tr.b].fogR || 0;
+        const t = Math.min(ka, kb);
+        if (t > 0.05) eraseTrail(ctx, tr.pts, W, H, t);
+    });
+
     Object.values(LOCATIONS).forEach(loc=>{
         const k = loc.fogR || 0;
         if (k <= 0) return;
         const [x, y, w, h] = loc.spot;
         const cx = (x + w / 2) / 100 * W;
         const cy = (y + h / 2) / 100 * H;
-        const rx = (w / 100 * W) * 0.95 * k;
-        const ry = (h / 100 * H) * 1.05 * k;
+        const fs = loc.fogScale || 1;
+        const rx = (w / 100 * W) * 0.9 * fs * k;
+        const ry = (h / 100 * H) * 1.0 * fs * k;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.scale(rx, ry);
@@ -695,6 +724,40 @@ function drawFog(){
         ctx.restore();
     });
     ctx.globalCompositeOperation = 'source-over';
+}
+
+
+/* Дороги между локациями: если открыты обе, туман расходится и по пути между ними */
+const TRAILS = [
+    { a:'byers',  b:'police', pts:[[24,35],[29,44],[34,55],[39,66],[46,70],[53,70],[58,68]] },
+    { a:'byers',  b:'radio',  pts:[[25,34],[31,38],[36,36],[41,33]] },
+    { a:'radio',  b:'police', pts:[[42,40],[44,52],[45,62],[50,68],[57,69]] },
+    { a:'police', b:'lab',    pts:[[61,60],[64,52],[68,45],[73,40]] },
+    { a:'police', b:'school', pts:[[63,70],[69,71],[75,70]] },
+    { a:'lab',    b:'school', pts:[[78,45],[82,53],[83,60]] }
+];
+
+/* Мягкий след вдоль полилинии — штампуем размытые пятна с шагом */
+function eraseTrail(ctx, pts, W, H, t){
+    const r = Math.min(W, H) * 0.055 * t;
+    if (r <= 1) return;
+    const step = r * 0.45;
+    for (let i = 0; i < pts.length - 1; i++){
+        const x1 = pts[i][0] / 100 * W,     y1 = pts[i][1] / 100 * H;
+        const x2 = pts[i + 1][0] / 100 * W, y2 = pts[i + 1][1] / 100 * H;
+        const len = Math.hypot(x2 - x1, y2 - y1);
+        const n = Math.max(1, Math.ceil(len / step));
+        for (let k = 0; k <= n; k++){
+            const x = x1 + (x2 - x1) * k / n;
+            const y = y1 + (y2 - y1) * k / n;
+            const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+            g.addColorStop(0,    'rgba(0,0,0,0.95)');
+            g.addColorStop(0.45, 'rgba(0,0,0,0.75)');
+            g.addColorStop(1,    'rgba(0,0,0,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(x - r, y - r, r * 2, r * 2);
+        }
+    }
 }
 
 /* плавное открытие окон */
@@ -831,7 +894,9 @@ function playMessage(){
     out.textContent = '';
     Object.values(letterMap).forEach(o=>{ o.bulb.classList.remove('on'); o.glyph.classList.remove('on'); });
 
-    const chars = [...currentMessage().word];
+    // Буквы вспыхивают вразнобой: задача — сложить из них слово
+    const chars = [...new Set([...currentMessage().word].filter(c=> c !== ' '))]
+                    .sort(()=> Math.random() - .5);
     let idx = 0, prev = null;
     revealed = false;
     let dots = '';
@@ -848,12 +913,6 @@ function playMessage(){
             return;
         }
         const ch = chars[idx++];
-        if (ch === ' '){
-            dots += '   ';
-            out.textContent = dots;
-            setTimeout(step, CONFIG.wordPause);
-            return;
-        }
         const node = letterMap[ch];
         if (node){
             node.bulb.classList.add('on');
@@ -1004,214 +1063,6 @@ function locFlash(color, ms){
     setTimeout(()=> f.remove(), (ms || 320) + 80);
 }
 
-/* ==========================================================
-   ПОЛИЦЕЙСКИЙ УЧАСТОК — подбор ключей к замкам
-   Замки обведены по фотографии, у каждого свой профиль бородки.
-   Подходит ровно один ключ; на экране подсказок нет.
-   ========================================================== */
-const LOCKS = [
-    { box: [20.2, 67.6, 6.2, 14.2], pat: [1, 3, 2] },
-    { box: [28.2, 66.8, 6.0, 13.8], pat: [3, 1, 2] },
-    { box: [36.3, 65.9, 6.0, 14.0], pat: [2, 3, 1] },
-    { box: [44.4, 65.0, 6.1, 14.2], pat: [1, 2, 4] },
-    { box: [52.2, 64.2, 6.1, 14.2], pat: [4, 2, 1] },
-    { box: [59.4, 63.5, 5.9, 14.3], pat: [2, 4, 3] },
-    { box: [66.8, 62.8, 6.0, 14.5], pat: [3, 2, 4] },
-    { box: [74.7, 62.1, 6.1, 14.4], pat: [4, 3, 1] },
-    { box: [82.3, 61.5, 6.4, 14.0], pat: [1, 4, 3] }
-];
-
-const Police = { picked: null, opened: 0, misses: 0, order: [] };
-
-/* Силуэт ключа: круглая головка, стержень и бородка по узору */
-function keySVG(pat, hole){
-    const H = [0, 6, 11, 16, 21];
-    let d = 'M7,9 A7,7 0 1,1 7,17 Z M13,10 L74,10 L74,14 ';
-    let x = 74;
-    for (let i = pat.length - 1; i >= 0; i--){
-        const t = H[pat[i]];
-        d += `L${x},${14 + t} L${x - 11},${14 + t} L${x - 11},14 `;
-        x -= 15;
-    }
-    d += 'L13,14 Z';
-    const fill = hole ? '#120b05' : '#ffd9a4';
-    return `<svg viewBox="0 0 80 38" xmlns="http://www.w3.org/2000/svg">` +
-           (hole ? `<rect x="1" y="1" width="78" height="36" rx="3" fill="#e8d2ab"/>` : '') +
-           `<path d="${d}" fill="${fill}"/></svg>`;
-}
-
-function policeBadge(){
-    const b = document.getElementById('loc-badge');
-    if (!b) return;
-    const left = LOCKS.length - Police.opened;
-    b.innerHTML = 'Замков осталось <b>' + left + '</b>' +
-        (Police.misses ? ' · <span class="miss">ошибок ' + Police.misses + '</span>' : '');
-}
-
-function policeBar(){
-    const lock = Police.picked !== null ? null : null;
-    const keys = Police.order.map(i=>{
-        const used = LOCKS[i].open ? ' used' : '';
-        const pick = (Police.pickedKey === i) ? ' picked' : '';
-        return `<div class="keycard${used}${pick}" data-key="${i}">${keySVG(LOCKS[i].pat, false)}</div>`;
-    }).join('');
-    const sel = Police.pickedLock;
-    const hole = sel === null || sel === undefined
-        ? '<span>Выберите замок на тубусе</span>'
-        : keySVG(LOCKS[sel].pat, true) + '<span>какой ключ подойдёт?</span>';
-    return `
-      <div class="taskbar">
-        <div class="tb-left">
-          <div class="tb-title">ОРУЖЕЙНАЯ</div>
-          <div class="tb-text">Тубус заперт. Нажмите замок, затем — <b>ключ с подходящей бородкой</b>.</div>
-        </div>
-        <div class="tb-mid"><div class="keyrow" id="keyrow">${keys}</div></div>
-        <div class="tb-right"><div class="keyhole-box" id="keyhole">${hole}</div></div>
-      </div>`;
-}
-
-function policeRefresh(){
-    renderLoc(policeBar());
-    policeBadge();
-    document.querySelectorAll('#keyrow .keycard').forEach(el=>{
-        el.addEventListener('click', ()=> pickKey(+el.dataset.key));
-    });
-}
-
-function pickKey(i){
-    if (LOCKS[i].open) return;
-    if (Police.pickedLock === null || Police.pickedLock === undefined){
-        Police.pickedKey = (Police.pickedKey === i) ? null : i;
-        policeRefresh();
-        return;
-    }
-    const lockIdx = Police.pickedLock;
-    if (i === lockIdx){
-        openLock(lockIdx);
-    } else {
-        Police.misses++;
-        const el = LOCKS[lockIdx].el;
-        el.classList.remove('bad'); void el.offsetWidth; el.classList.add('bad');
-        locFlash('rgba(255,40,20,.28)', 260);
-        playFx('miss');
-    }
-    Police.pickedLock = null;
-    Police.pickedKey = null;
-    LOCKS.forEach(l=> l.el && l.el.classList.remove('picked'));
-    policeRefresh();
-}
-
-function openLock(i){
-    const l = LOCKS[i];
-    if (l.open) return;
-    l.open = true;
-    Police.opened++;
-    l.el.classList.add('done');
-    sparks(l.box, '#ffd27a', 16);
-    locFlash('rgba(255,220,150,.22)', 240);
-    playFx('open');
-    if (Police.opened === LOCKS.length) setTimeout(()=> policeResult(true), 900);
-}
-
-function selectLock(i){
-    const l = LOCKS[i];
-    if (l.open) return;
-    LOCKS.forEach(x=> x.el && x.el.classList.remove('picked'));
-    if (Police.pickedLock === i){ Police.pickedLock = null; }
-    else { Police.pickedLock = i; l.el.classList.add('picked'); }
-    Police.pickedKey = null;
-    policeRefresh();
-}
-
-/* ==========================================================
-   ЛАБОРАТОРИЯ — не попасть в объектив
-   Камеры на потолке по очереди просыпаются и делают снимок.
-   Шагать можно только пока все тёмные.
-   ========================================================== */
-const CAMERAS = [
-    { box: [0.0, 11.5, 6.5, 9.0],  beam: [-2, 19, 26, 62] },
-    { box: [48.5, 18.5, 5.5, 7.0], beam: [40, 25, 22, 60] },
-    { box: [92.0, 16.5, 7.5, 9.5], beam: [76, 25, 26, 60] }
-];
-const LAB = { steps: 8, step: 0, misses: 0, phase: 'safe', timer: null, active: -1, running: false };
-
-function labBadge(){
-    const b = document.getElementById('loc-badge');
-    if (!b) return;
-    b.innerHTML = 'До архива <b>' + (LAB.steps - LAB.step) + '</b>' +
-        (LAB.misses ? ' · <span class="miss">замечены ' + LAB.misses + '/3</span>' : '');
-}
-
-function labBar(){
-    let dots = '';
-    for (let i = 0; i < LAB.steps; i++) dots += `<i class="${i < LAB.step ? 'on' : ''}"></i>`;
-    return `
-      <div class="taskbar">
-        <div class="tb-left">
-          <div class="tb-title">СЕКТОР 7</div>
-          <div class="tb-text">Идите к архиву. Шагайте, только <b>пока камеры спят</b>.</div>
-        </div>
-        <div class="tb-mid">
-          <div class="steps">${dots}</div>
-          <div class="watch" id="lab-watch">коридор чист</div>
-        </div>
-        <div class="tb-right">
-          <button class="btn small" id="lab-step" onclick="labStep()">Шаг</button>
-        </div>
-      </div>`;
-}
-
-function labSchedule(){
-    if (!LAB.running) return;
-    clearTimeout(LAB.timer);
-    const w = document.getElementById('lab-watch');
-    if (LAB.phase === 'safe'){
-        LAB.phase = 'charge';
-        LAB.active = Math.floor(Math.random() * CAMERAS.length);
-        const cam = CAMERAS[LAB.active];
-        cam.el.classList.add('picked');
-        cam.beamEl.classList.add('on');
-        if (w){ w.textContent = 'камера просыпается'; w.classList.add('danger'); }
-        LAB.timer = setTimeout(labSchedule, 700 + Math.random() * 500);
-    } else if (LAB.phase === 'charge'){
-        LAB.phase = 'flash';
-        locFlash('rgba(255,255,255,.75)', 260);
-        playFx('flash');
-        if (w) w.textContent = 'снимок!';
-        LAB.timer = setTimeout(labSchedule, 320);
-    } else {
-        LAB.phase = 'safe';
-        CAMERAS.forEach(c=>{ c.el.classList.remove('picked'); c.beamEl.classList.remove('on'); });
-        if (w){ w.textContent = 'коридор чист'; w.classList.remove('danger'); }
-        LAB.timer = setTimeout(labSchedule, 1500 + Math.random() * 1300);
-    }
-}
-
-function labStep(){
-    if (!LAB.running) return;
-    if (LAB.phase === 'safe'){
-        LAB.step++;
-        renderLoc(labBar()); labBadge();
-        if (LAB.step >= LAB.steps){
-            LAB.running = false;
-            clearTimeout(LAB.timer);
-            CAMERAS.forEach(c=>{ c.el.classList.remove('picked'); c.beamEl.classList.remove('on'); });
-            setTimeout(()=> labResult(true), 500);
-        }
-    } else {
-        LAB.misses++;
-        shakeLoc();
-        locFlash('rgba(255,40,20,.4)', 300);
-        playFx('miss');
-        renderLoc(labBar()); labBadge();
-        if (LAB.misses >= 3){
-            LAB.running = false;
-            clearTimeout(LAB.timer);
-            setTimeout(()=> labResult(false), 600);
-        }
-    }
-}
-
 function shakeLoc(){
     const s = document.getElementById('screen-loc');
     s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
@@ -1241,37 +1092,38 @@ const LOC_SCENES = {
 
     police(){
         setLocMedia({ video:'assets/police.mp4', image:'assets/police-locks.jpg', dim:'rgba(4,0,3,.18)' });
-        clearSpots();
-        Police.picked = null; Police.pickedLock = null; Police.pickedKey = null;
-        Police.opened = 0; Police.misses = 0;
-        Police.order = LOCKS.map((_, i)=> i).sort(()=> Math.random() - .5);
-        LOCKS.forEach((l, i)=>{
-            l.open = false;
-            l.el = addSpot(l.box, '#ffcf8a', ()=> selectLock(i));
-        });
-        locBadgeEl();
-        policeRefresh();
+        clearSpots(); hideBadge();
+        renderLoc(`
+          <div class="taskbar">
+            <div class="tb-left">
+              <div class="tb-title">ОРУЖЕЙНАЯ</div>
+              <div class="tb-text">Тубус заперт на девять замков. Где-то в участке — связка ключей.
+                <b>Подберите ключи к замкам.</b></div>
+            </div>
+            <div class="tb-mid"></div>
+            <div class="tb-right">
+              <button class="btn small ok" onclick="policeResult(true)">Тубус открыт</button>
+              <button class="btn small ghost" onclick="policeResult(false)">Не справились</button>
+            </div>
+          </div>`);
     },
 
     lab(){
         setLocMedia({ video:'assets/lab.mp4', image:'assets/lab.png', dim:'rgba(4,0,6,.2)' });
-        clearSpots();
-        LAB.step = 0; LAB.misses = 0; LAB.phase = 'safe'; LAB.running = true;
-        CAMERAS.forEach(c=>{
-            c.el = addSpot(c.box, '#ff5c4c', null);
-            c.el.style.cursor = 'default';
-            const b = document.createElement('div');
-            b.className = 'cam-beam';
-            b.dataset.box = JSON.stringify(c.beam);
-            placeSpot(b, c.beam);
-            locSpots.appendChild(b);
-            c.beamEl = b;
-        });
-        locBadgeEl();
-        renderLoc(labBar());
-        labBadge();
-        clearTimeout(LAB.timer);
-        LAB.timer = setTimeout(labSchedule, 1400);
+        clearSpots(); hideBadge();
+        renderLoc(`
+          <div class="taskbar">
+            <div class="tb-left">
+              <div class="tb-title">СЕКТОР 7</div>
+              <div class="tb-text">В коридорах — камеры наблюдения.
+                <b>Дойдите до архива, не попав в объектив.</b></div>
+            </div>
+            <div class="tb-mid"></div>
+            <div class="tb-right">
+              <button class="btn small ok" onclick="labResult(true)">Прошли незамеченными</button>
+              <button class="btn small ghost" onclick="labResult(false)">Нас засекли</button>
+            </div>
+          </div>`);
     },
 
     radio(){
@@ -1365,8 +1217,6 @@ function policeResult(ok){
 
 function labResult(ok){
     State.done.lab = true;
-    LAB.running = false;
-    clearTimeout(LAB.timer);
     clearSpots(); hideBadge();
     if (ok){
         note('Слабые места: звук, лапы, огонь в пасть');
